@@ -511,13 +511,20 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
         <div id="gunluk-pazar-list"></div>
       </div>
     </div>
-    <!-- Sağ: O günün ödemeleri + hızlı not -->
+    <!-- Sağ: O günün ödemeleri + giderler + hızlı not -->
     <div>
       <div class="card">
         <div class="card-header">
           <div class="card-title">Ödemeler & Vadesi Gelenler</div>
         </div>
         <div id="gunluk-odeme-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💸 Giderler</div>
+          <span id="gunluk-gider-top" style="font-size:12px;font-family:var(--mono);color:var(--red)"></span>
+        </div>
+        <div id="gunluk-gider-list"></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title">Günlük Not</div></div>
@@ -883,7 +890,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <div class="fg fg2">
       <div class="fl"><label>Not</label><input type="text" id="gd-not" placeholder="Opsiyonel"></div>
-      <div class="fl"><label>Tarih (opsiyonel)</label><input type="date" id="gd-tarih"></div>
+      <div class="fl"><label>Tarih</label><input type="date" id="gd-tarih" required></div>
     </div>
     <button class="btn btn-green" onclick="addGider()">+ Gider Ekle</button>
   </div>
@@ -1549,9 +1556,9 @@ function seedDemo(){
 // ════ HELPERS ════
 const fmt = n => '₺'+Math.round(n).toLocaleString('tr-TR');
 const fmtN = n => Math.round(n).toLocaleString('tr-TR');
-const ayGiris = () => S.giris.filter(r=>r.ay===ay);
-const ayPazar = () => S.pazar.filter(r=>r.ay===ay);
-const ayGider = () => S.gider.filter(r=>r.ay===ay);
+const ayGiris = () => S.giris.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
+const ayPazar = () => S.pazar.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
+const ayGider = () => S.gider.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
 const pKar = r => r.tutar - r.tutar*(r.kom/100) - r.tutar*(r.kdv/100) - r.kargo - r.maliyet;
 
 function getBankaKomOran(odeme, taksit){
@@ -1635,12 +1642,15 @@ function renderAll(){
 function updateChip(){
   const tot=ayGiris().length+ayPazar().length;
   document.getElementById('chip-text').textContent=`${tot} kayıt`;
-  document.getElementById('nb-giris').textContent=ayGiris().length;
+  document.getElementById('nb-giris').textContent=ayGiris().filter(r=>['Saat','Telefon','2. El Telefon'].includes(r.kat)).length;
   document.getElementById('nb-pazar').textContent=ayPazar().length;
   document.getElementById('nb-tstok').textContent=S.telStok.filter(r=>r.durum==='stokta').length;
   document.getElementById('nb-2el').textContent=S.ikiEl.filter(r=>r.durum==='stokta').length;
   const nb2=document.getElementById('nb-kkharcama');
-  if(nb2) nb2.textContent=S.kkHarcamalar.length;
+  if(nb2){
+    const buAyKey=`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+    nb2.textContent=S.kkHarcamalar.filter(h=>h.tarih.startsWith(buAyKey)).length;
+  }
   const soon=getUpcomingOdemeler(30).filter(o=>!isPaid(o.paidKey)).length;
   const nb=document.getElementById('nb-takvim');
   if(nb){ nb.textContent=soon; nb.style.background=soon>0?'rgba(248,113,113,.25)':''; nb.style.color=soon>0?'var(--red)':''; }
@@ -2302,11 +2312,14 @@ function delP(id){S.pazar=S.pazar.filter(r=>r.id!==id);renderAll();}
 function addGider(){
   const desc=document.getElementById('gd-desc')?.value;
   const tutar=+document.getElementById('gd-tutar')?.value;
-  if(!desc||!tutar) return;
-  const odemeY=document.getElementById('gd-odeme-yontemi')?.value||'Nakit';
   const tarih=document.getElementById('gd-tarih')?.value||'';
-  S.gider.push({id:uid++,ay,yr,desc,kat:document.getElementById('gd-kat').value,tutar,not:document.getElementById('gd-not')?.value||'',odemeYontemi:odemeY,tarih});
-  ['gd-desc','gd-tutar','gd-not','gd-tarih'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(!desc||!tutar||!tarih) return;
+  const odemeY=document.getElementById('gd-odeme-yontemi')?.value||'Nakit';
+  const d=new Date(tarih+'T12:00:00');
+  S.gider.push({id:uid++,ay:d.getMonth()+1,yr:d.getFullYear(),desc,kat:document.getElementById('gd-kat').value,tutar,not:document.getElementById('gd-not')?.value||'',odemeYontemi:odemeY,tarih});
+  ['gd-desc','gd-tutar','gd-not'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Tarihi bugün olarak resetle
+  safeSet('gd-tarih', new Date().toISOString().split('T')[0]);
   renderAll();
 }
 function renderGiderList(){
@@ -3604,6 +3617,9 @@ function renderGunluk(){
 
   // Metrics
   const metricsEl=document.getElementById('gunluk-metrics');
+  const dayGiderMetric=S.gider.filter(r=>r.tarih===gunlukDateCursor);
+  const dayGiderToplamMetric=dayGiderMetric.reduce((s,r)=>s+r.tutar,0);
+
   if(metricsEl) metricsEl.innerHTML=`
     <div class="mc"><div class="mc-accent" style="background:var(--blue)"></div>
       <div class="mc-label">Mağaza Ciro</div><div class="mc-value" style="color:var(--blue)">${fmt(dayCiro)}</div>
@@ -3614,6 +3630,9 @@ function renderGunluk(){
     <div class="mc"><div class="mc-accent" style="background:var(--amber)"></div>
       <div class="mc-label">Pazaryeri Ciro</div><div class="mc-value" style="color:var(--amber)">${fmt(dayPazarCiro)}</div>
       <div class="mc-sub">${dayPazar.length} sipariş</div></div>
+    <div class="mc"><div class="mc-accent" style="background:var(--red)"></div>
+      <div class="mc-label">Giderler</div><div class="mc-value" style="color:${dayGiderToplamMetric>0?'var(--red)':'var(--t3)'}">−${fmt(dayGiderToplamMetric)}</div>
+      <div class="mc-sub">${dayGiderMetric.length} kalem</div></div>
     <div class="mc"><div class="mc-accent" style="background:${dayOdeme.length?'var(--red)':'var(--t3)'}"></div>
       <div class="mc-label">Ödeme / Vade</div><div class="mc-value" style="color:${dayOdeme.length?'var(--red)':'var(--t3)'}">${dayOdeme.length}</div>
       <div class="mc-sub">${fmt(dayOdeme.reduce((s,o)=>s+o.tutar,0))}</div></div>`;
@@ -3675,6 +3694,24 @@ function renderGunluk(){
       </div>`;
     }).join('')
   }</div>`:'<div class="empty" style="padding:20px"><p>Bu gün vade yok</p></div>';
+
+  // Giderler
+  const dayGider=S.gider.filter(r=>r.tarih===gunlukDateCursor);
+  const dayGiderToplam=dayGider.reduce((s,r)=>s+r.tutar,0);
+  const giderTopEl=document.getElementById('gunluk-gider-top');
+  if(giderTopEl) giderTopEl.textContent=dayGider.length?'−'+fmt(dayGiderToplam):'';
+  const giderEl=document.getElementById('gunluk-gider-list');
+  if(giderEl) giderEl.innerHTML=dayGider.length?`<div class="tw"><table><thead><tr><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th><th>Ödeme</th></tr></thead><tbody>${
+    dayGider.map(r=>{
+      const isNakit=(r.odemeYontemi||'Nakit')==='Nakit';
+      return `<tr>
+        <td>${r.desc}</td>
+        <td class="muted tiny">${r.kat||'—'}</td>
+        <td class="r neg">−${fmt(r.tutar)}</td>
+        <td>${isNakit?'<span class="badge b-stok">💵 Nakit</span>':`<span class="badge b-satildi">${r.odemeYontemi}</span>`}</td>
+      </tr>`;}).join('')
+  }</tbody></table></div>`
+  :'<div class="empty" style="padding:16px"><p>Bu gün gider yok</p></div>';
 
   // Not
   const notEl=document.getElementById('gunluk-not-input');
@@ -3897,10 +3934,11 @@ function renderAnaKasa(){
   // Özet
   const ozetEl=document.getElementById('ak-bugun-ozet');
   if(ozetEl) ozetEl.innerHTML=`
-    <div class="sr"><span class="sr-label">Dünden Devreden</span><span class="sr-val neu">${fmt(dunBakiye)}</span></div>
+    <div class="sr"><span class="sr-label">↩ Dünden Devreden</span><span class="sr-val neu">${fmt(dunBakiye)}</span></div>
     <div class="sr green"><span class="sr-label">+ Nakit Giriş</span><span class="sr-val">+${fmt(bugunGun.giris)}</span></div>
     <div class="sr ${bugunGun.cikis>0?'red':''}"><span class="sr-label">− Nakit Çıkış</span><span class="sr-val">${bugunGun.cikis>0?'−'+fmt(bugunGun.cikis):'₺0'}</span></div>
-    <div class="sr ${bugunBakiye>=0?'green':'red'}" style="margin-top:4px"><span class="sr-label" style="font-weight:700">Güncel Bakiye</span><span class="sr-val" style="font-size:16px">${fmt(bugunBakiye)}</span></div>`;
+    <div class="sr ${bugunBakiye>=0?'green':'red'}" style="margin-top:4px;border-top:1px solid var(--b1);padding-top:8px"><span class="sr-label" style="font-weight:700">Güncel Bakiye</span><span class="sr-val" style="font-size:16px">${fmt(bugunBakiye)}</span></div>
+    <div class="sr purple" style="margin-top:4px"><span class="sr-label">↪ Yarına Devreden</span><span class="sr-val" style="color:var(--purple)">${fmt(bugunBakiye)}</span></div>`;
 
   // Banka bazlı ödeme özeti
   const bankaOzetEl=document.getElementById('ak-banka-ozet');
@@ -4881,6 +4919,7 @@ function safeSet(id,val){ const el=document.getElementById(id); if(el) el.value=
 safeSet('g-tarih',today);
 safeSet('p-tarih',today);
 safeSet('ts-tarih',today);
+safeSet('gd-tarih',today);
 safeSet('ie-tarih',today);
 // Tek seferlik demo data temizliği
 if(!localStorage.getItem('kasapro_cleaned_v1')){
