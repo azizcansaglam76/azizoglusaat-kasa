@@ -1701,6 +1701,7 @@ function nav(pg, btn){
   else { renderAll(); if(pg==='giris') safeSet('g-tarih', new Date().toISOString().split('T')[0]);
     if(pg==='pazaryeri') refreshPazarMarkaList();
   }
+  if(window.innerWidth<=768) closeSidebar();
 }
 function prevMonth(){ ay--; if(ay<1){ay=12;yr--;} updateMonthLabel(); renderAll(); }
 function nextMonth(){ ay++; if(ay>12){ay=1;yr++;} updateMonthLabel(); renderAll(); }
@@ -5014,13 +5015,6 @@ function toggleSidebar(){
 function closeSidebar(){
   document.querySelector('.sidebar')?.classList.remove('open');
   document.getElementById('sidebar-overlay')?.classList.remove('open');
-}
-
-// Nav tıklanınca mobilde sidebar kapat
-const _origNav = nav;
-function nav(pg, btn){
-  _origNav(pg, btn);
-  if(window.innerWidth<=768) closeSidebar();
 }
 const today=new Date().toISOString().split('T')[0];
 function safeSet(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
