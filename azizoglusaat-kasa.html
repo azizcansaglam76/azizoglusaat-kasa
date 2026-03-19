@@ -287,13 +287,18 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 @keyframes bildirim-pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.3)}50%{box-shadow:0 0 0 4px rgba(248,113,113,.1)}}
 .rap-range-btn.active{border-color:var(--green2);color:var(--green);background:var(--green3)}
 @media print{
-  .sidebar,.topbar,.nav-btn,.btn{display:none!important}
-  .page{display:block!important}
-  body{background:#fff;color:#000}
-  .card{border:1px solid #ddd;background:#fff}
-  .mc,.kpi{border:1px solid #ddd;background:#fff}
-  .pos{color:#16a34a}.neg{color:#dc2626}.neu{color:#000}
-  .mc-value,.kpi-value{color:#000}
+  .sidebar,.topbar,.nav-btn,.btn,#gunluk-nakit-ozet-card{display:none!important}
+  .page{display:none!important}
+  .page.active{display:block!important}
+  .app{display:block!important}
+  .content{overflow:visible!important;padding:10px!important}
+  body{background:#fff!important;color:#000!important;overflow:auto!important}
+  .card{border:1px solid #ddd!important;background:#fff!important;break-inside:avoid}
+  .mc,.kpi{border:1px solid #ddd!important;background:#fff!important}
+  .pos{color:#16a34a!important}.neg{color:#dc2626!important}.neu{color:#000!important}
+  .mc-value,.kpi-value,.mc-label{color:#000!important}
+  .tw{overflow:visible!important}
+  .tw table{min-width:unset!important;font-size:11px}
 }
 
 /* ── MOBİL ── */
@@ -580,7 +585,16 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 
   <!-- Günlük KPI -->
-  <div class="metrics" id="gunluk-metrics" style="grid-template-columns:repeat(4,1fr)"></div>
+  <div class="metrics" id="gunluk-metrics" style="grid-template-columns:repeat(5,1fr)"></div>
+
+  <!-- Günlük Nakit Özeti -->
+  <div class="card" id="gunluk-nakit-ozet-card" style="margin-bottom:14px;border-color:var(--green2);background:linear-gradient(135deg,rgba(74,222,128,.04),transparent)">
+    <div class="card-header">
+      <div class="card-title" style="color:var(--green)">💵 Günlük Nakit Akışı</div>
+      <span id="gunluk-nakit-bakiye" style="font-size:14px;font-weight:700;font-family:var(--mono)"></span>
+    </div>
+    <div id="gunluk-nakit-ozet"></div>
+  </div>
 
   <div class="g2">
     <!-- Sol: O günün satışları -->
@@ -2217,7 +2231,10 @@ function renderGirisList(){
     const ciroAll = allFiltered.reduce((s,r)=>s+r.fiyat*r.adet,0);
     const karAll  = allFiltered.reduce((s,r)=>s+gKar(r),0);
     const adetAll = allFiltered.reduce((s,r)=>s+r.adet,0);
-    const nakitAll= allFiltered.filter(r=>r.odeme==='Nakit').reduce((s,r)=>s+r.fiyat*r.adet,0);
+    const nakitAll= allFiltered.filter(r=>r.odeme==='Nakit').reduce((s,r)=>s+r.fiyat*r.adet,0)
+                  + allFiltered.filter(r=>r.odeme==='Karma').reduce((s,r)=>s+(r.karmaNakit||0),0);
+    const bankaAll= allFiltered.filter(r=>r.odeme!=='Nakit'&&r.odeme!=='Karma').reduce((s,r)=>s+r.fiyat*r.adet,0)
+                  + allFiltered.filter(r=>r.odeme==='Karma').reduce((s,r)=>s+(r.karmaKart||0),0);
     kpiEl.innerHTML=`
       <div class="mc"><div class="mc-accent" style="background:var(--blue)"></div>
         <div class="mc-label">Satış Adedi</div>
@@ -2231,10 +2248,14 @@ function renderGirisList(){
         <div class="mc-label">Net Kâr</div>
         <div class="mc-value" style="color:var(--green)">${fmt(karAll)}</div>
         <div class="mc-sub">Komisyon sonrası</div></div>
+      <div class="mc"><div class="mc-accent" style="background:var(--green)"></div>
+        <div class="mc-label">💵 Nakit Tahsilat</div>
+        <div class="mc-value" style="color:var(--green)">${fmt(nakitAll)}</div>
+        <div class="mc-sub">Nakit + karma nakit</div></div>
       <div class="mc"><div class="mc-accent" style="background:var(--purple)"></div>
-        <div class="mc-label">Nakit Tahsilat</div>
-        <div class="mc-value" style="color:var(--purple)">${fmt(nakitAll)}</div>
-        <div class="mc-sub">Nakit satışlar</div></div>`;
+        <div class="mc-label">🏦 Banka Tahsilat</div>
+        <div class="mc-value" style="color:var(--purple)">${fmt(bankaAll)}</div>
+        <div class="mc-sub">Kart + karma kart</div></div>`;
   }
 
   document.getElementById('g-tbody').innerHTML=rows.length?rows.map(r=>{
@@ -3726,6 +3747,56 @@ function renderGunluk(){
     <div class="mc"><div class="mc-accent" style="background:${dayOdeme.length?'var(--red)':'var(--t3)'}"></div>
       <div class="mc-label">Ödeme / Vade</div><div class="mc-value" style="color:${dayOdeme.length?'var(--red)':'var(--t3)'}">${dayOdeme.length}</div>
       <div class="mc-sub">${fmt(dayOdeme.reduce((s,o)=>s+o.tutar,0))}</div></div>`;
+
+  // Günlük Nakit Özeti
+  const gun = kasaGunlukHesapla(gunlukDateCursor);
+  const dunBakiye = kasaBakiyeHesapla((() => { const d=new Date(gunlukDateCursor+'T12:00:00'); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; })());
+
+  // Banka tahsilatı (nakit olmayan satışlar)
+  const bankaSatislar = daySales.filter(r=>r.odeme!=='Nakit'&&r.odeme!=='Karma');
+  const bankaTahsilat = bankaSatislar.reduce((s,r)=>s+r.fiyat*r.adet,0)
+                      + daySales.filter(r=>r.odeme==='Karma').reduce((s,r)=>s+(r.karmaKart||0),0);
+  // Banka bazında kırılım
+  const bankaMap = {};
+  daySales.filter(r=>r.odeme!=='Nakit'&&r.odeme!=='Karma').forEach(r=>{
+    bankaMap[r.odeme]=(bankaMap[r.odeme]||0)+r.fiyat*r.adet;
+  });
+  daySales.filter(r=>r.odeme==='Karma'&&r.karmaKart>0).forEach(r=>{
+    const b=r.karmaBanka||'Karma Kart';
+    bankaMap[b]=(bankaMap[b]||0)+(r.karmaKart||0);
+  });
+
+  const gunSonuBakiye = dunBakiye + gun.giris - gun.cikis;
+
+  const naOzetEl = document.getElementById('gunluk-nakit-ozet');
+  const naBakiyeEl = document.getElementById('gunluk-nakit-bakiye');
+  if(naBakiyeEl){ naBakiyeEl.textContent=fmt(gunSonuBakiye); naBakiyeEl.style.color=gunSonuBakiye>=0?'var(--green)':'var(--red)'; }
+  if(naOzetEl) naOzetEl.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+      <div class="kasa-mini">
+        <div class="kasa-mini-label">↩ Dünden Devreden</div>
+        <div class="kasa-mini-val" style="color:var(--blue)">${fmt(dunBakiye)}</div>
+      </div>
+      <div class="kasa-mini" style="border-color:var(--green2)">
+        <div class="kasa-mini-label">💵 Nakit Giriş</div>
+        <div class="kasa-mini-val" style="color:var(--green)">+${fmt(gun.giris)}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">Nakit + karma nakit</div>
+      </div>
+      ${Object.keys(bankaMap).length?`<div class="kasa-mini" style="border-color:rgba(96,165,250,.3)">
+        <div class="kasa-mini-label">🏦 Banka Tahsilat</div>
+        <div class="kasa-mini-val" style="color:var(--blue)">${fmt(bankaTahsilat)}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">${Object.entries(bankaMap).map(([k,v])=>`${k}: ${fmt(v)}`).join(' · ')}</div>
+      </div>`:''}
+      <div class="kasa-mini" style="border-color:rgba(248,113,113,.3)">
+        <div class="kasa-mini-label">💸 Nakit Çıkış</div>
+        <div class="kasa-mini-val" style="color:${gun.cikis>0?'var(--red)':'var(--t3)'}">−${fmt(gun.cikis)}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">Gider + ödemeler</div>
+      </div>
+      <div class="kasa-mini" style="border-color:var(--green2);background:rgba(74,222,128,.04)">
+        <div class="kasa-mini-label">↪ Gün Sonu Bakiye</div>
+        <div class="kasa-mini-val" style="color:${gunSonuBakiye>=0?'var(--green)':'var(--red)'}">${fmt(gunSonuBakiye)}</div>
+      </div>
+    </div>`;
 
   // Satışlar
   const satisEl=document.getElementById('gunluk-satis-list');
