@@ -210,7 +210,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .cal-month-title{font-size:15px;font-weight:600;min-width:140px;text-align:center}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
 .cal-dow{padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--b1)}
-.cal-cell{min-height:90px;padding:6px;border-right:1px solid var(--b1);border-bottom:1px solid var(--b1);position:relative;cursor:pointer;transition:background .1s}
+.cal-cell{min-height:130px;padding:7px;border-right:1px solid var(--b1);border-bottom:1px solid var(--b1);position:relative;cursor:pointer;transition:background .1s}
 .cal-cell:nth-child(7n){border-right:none}
 .cal-cell:hover{background:rgba(255,255,255,.02)}
 .cal-cell.today{background:rgba(74,222,128,.04)}
@@ -218,7 +218,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .cal-cell.other-month .cal-day-num{color:var(--t3)}
 .cal-cell.has-event{background:rgba(96,165,250,.03)}
 .cal-day-num{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px;line-height:1}
-.cal-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;cursor:pointer}
+.cal-event{font-size:11px;padding:3px 6px;border-radius:4px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;cursor:pointer}
 .cal-event.ev-kk{background:rgba(248,113,113,.15);color:#f87171;border-left:2px solid #f87171}
 .cal-event.ev-kredi{background:rgba(251,191,36,.15);color:#fbbf24;border-left:2px solid #fbbf24}
 .cal-event.ev-sgk{background:rgba(96,165,250,.15);color:#60a5fa;border-left:2px solid #60a5fa}
@@ -362,9 +362,9 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   .ph{flex-direction:column;align-items:flex-start;gap:8px;padding-bottom:10px}
 
   /* Takvim mobil */
-  .cal-cell{min-height:55px;padding:3px}
+  .cal-cell{min-height:75px;padding:4px}
   .cal-day-num{font-size:10px;margin-bottom:2px}
-  .cal-event{font-size:9px;padding:1px 3px;margin-bottom:1px}
+  .cal-event{font-size:9px;padding:1px 4px;margin-bottom:2px}
   .cal-header-cell{font-size:10px;padding:6px 2px}
 
   /* Modallar */
@@ -3729,23 +3729,34 @@ function renderCalendar(){
     const hasEvent=dayOccs.length>0||daySaatSat.length>0||dayTelSat.length>0||dayIkiElSat.length>0||dayPazar>0||isTrendyolGun||isHepsiGun;
     html+=`<div class="cal-cell${isToday?' today':''}${isOther?' other-month':''}${hasEvent?' has-event':''}" onclick="calCellClick('${dateStr}')">
       <div class="cal-day-num">${d}</div>`;
-    // Önemli satışlar — her kategori ayrı
-    if(daySaatSat.length>0) html+=`<div class="cal-event ev-satis" style="background:rgba(251,191,36,.15);color:#fbbf24;border-color:#fbbf24">⌚ ${daySaatSat.length} saat</div>`;
-    if(dayTelSat.length>0) html+=`<div class="cal-event ev-satis" style="background:rgba(248,113,113,.15);color:#f87171;border-color:#f87171">📱 ${dayTelSat.length} telefon</div>`;
-    if(dayIkiElSat.length>0) html+=`<div class="cal-event ev-satis" style="background:rgba(192,132,252,.15);color:#c084fc;border-color:#c084fc">📱 ${dayIkiElSat.length} 2.el</div>`;
-    if(dayPazar>0) html+=`<div class="cal-event ev-satis" style="background:rgba(96,165,250,.15);color:#60a5fa;border-color:#60a5fa">📦 ${dayPazar} sipariş</div>`;
+    if(daySaatSat.length>0){
+      const ciro=daySaatSat.reduce((s,r)=>s+r.fiyat*r.adet,0);
+      html+=`<div class="cal-event ev-satis" style="background:rgba(251,191,36,.15);color:#fbbf24;border-color:#fbbf24" title="${fmt(ciro)}">⌚ ${daySaatSat.length} saat · ${fmt(ciro)}</div>`;
+    }
+    if(dayTelSat.length>0){
+      const ciro=dayTelSat.reduce((s,r)=>s+r.fiyat*r.adet,0);
+      html+=`<div class="cal-event ev-satis" style="background:rgba(248,113,113,.15);color:#f87171;border-color:#f87171" title="${fmt(ciro)}">📱 ${dayTelSat.length} tel · ${fmt(ciro)}</div>`;
+    }
+    if(dayIkiElSat.length>0){
+      const ciro=dayIkiElSat.reduce((s,r)=>s+r.fiyat*r.adet,0);
+      html+=`<div class="cal-event ev-satis" style="background:rgba(192,132,252,.15);color:#c084fc;border-color:#c084fc" title="${fmt(ciro)}">📱 ${dayIkiElSat.length} 2.el · ${fmt(ciro)}</div>`;
+    }
+    if(dayPazar>0){
+      const ciro=S.pazar.filter(r=>r.tarih===dateStr).reduce((s,r)=>s+r.tutar,0);
+      html+=`<div class="cal-event ev-satis" style="background:rgba(96,165,250,.15);color:#60a5fa;border-color:#60a5fa" title="${fmt(ciro)}">📦 ${dayPazar} sipariş · ${fmt(ciro)}</div>`;
+    }
     // Pazaryeri ödeme günleri
     if(isTrendyolGun) html+=`<div class="cal-event" style="background:${trendyolIslendi?'rgba(74,222,128,.15)':'rgba(249,115,22,.15)'};color:${trendyolIslendi?'#4ade80':'#f97316'};border-left:2px solid ${trendyolIslendi?'#4ade80':'#f97316'};cursor:pointer" onclick="event.stopPropagation();openPazarOdemeModal('Trendyol','${dateStr}')" title="Trendyol ödeme günü">${trendyolIslendi?'✓':'💰'} Trendyol</div>`;
     if(isHepsiGun) html+=`<div class="cal-event" style="background:${hepsiIslendi?'rgba(74,222,128,.15)':'rgba(234,179,8,.15)'};color:${hepsiIslendi?'#4ade80':'#eab308'};border-left:2px solid ${hepsiIslendi?'#4ade80':'#eab308'};cursor:pointer" onclick="event.stopPropagation();openPazarOdemeModal('Hepsiburada','${dateStr}')" title="Hepsiburada ödeme günü">${hepsiIslendi?'✓':'💰'} Hepsiburada</div>`;
     // Payment events
-    dayOccs.slice(0,3).forEach(o=>{
+    dayOccs.slice(0,4).forEach(o=>{
       const t=ODEME_TIPLER[o.tip]||ODEME_TIPLER.diger;
       const paidClass=isPaid(o.paidKey)?' ev-paid':'';
       const paidHesap=getPaidHesap(o.paidKey);
       const hesapLabel=paidHesap?` (${paidHesap})`:'';
       html+=`<div class="cal-event ${t.cls}${paidClass}" title="${o.ad} — ${fmt(o.tutar)}${hesapLabel}" onclick="event.stopPropagation();calEventClick('${o.paidKey}','${o.ad.replace(/'/g,"\\'")}',${o.tutar},'${o.odemeHesap||'Nakit'}')">${t.icon} ${o.ad}${paidHesap?' ✓':''}</div>`;
     });
-    if(dayOccs.length>3) html+=`<div style="font-size:9px;color:var(--t3);padding-left:4px">+${dayOccs.length-3} daha</div>`;
+    if(dayOccs.length>4) html+=`<div style="font-size:9px;color:var(--t3);padding-left:4px;margin-top:1px">+${dayOccs.length-4} ödeme daha</div>`;
     html+='</div>';
   }
   cellsEl.innerHTML=html;
