@@ -3553,6 +3553,7 @@ function getOdemeOccurrences(o, fromDate, toDate){
   // Tekrarlayan: aylık/haftalık/yıllık (bitiş tarihi varsa onu kullan)
   const effectiveTo2=(o.bitis&&new Date(o.bitis)<to)?new Date(o.bitis):to;
   let cur=new Date(o.tarih);
+  const orijinalGun=cur.getDate(); // 31 gibi orijinal günü sakla
   let safety=0;
   while(cur<=effectiveTo2&&safety<120){
     safety++;
@@ -3560,22 +3561,38 @@ function getOdemeOccurrences(o, fromDate, toDate){
       const dateStr=cur.toISOString().split('T')[0];
       const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
       if(exc){
-        if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar);continue;}
+        if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar,orijinalGun);continue;}
         if(exc.tip==='edit') results.push({...o,...exc.data,_occ:dateStr,_origId:o.id,_exc:true});
         else results.push({...o,_occ:dateStr,_origId:o.id});
       } else {
         results.push({...o,_occ:dateStr,_origId:o.id});
       }
     }
-    cur=nextOcc(cur,o.tekrar);
+    cur=nextOcc(cur,o.tekrar,orijinalGun);
   }
   return results;
 }
-function nextOcc(d,tekrar){
-  const nd=new Date(d);
-  if(tekrar==='aylik') nd.setMonth(nd.getMonth()+1);
-  else if(tekrar==='yillik') nd.setFullYear(nd.getFullYear()+1);
-  else if(tekrar==='haftalik') nd.setDate(nd.getDate()+7);
+function nextOcc(d, tekrar, orijinalGun){
+  const nd = new Date(d);
+  if(tekrar==='aylik'){
+    const gun = orijinalGun || nd.getDate();
+    const buAyYil  = nd.getFullYear();
+    const buAyNo   = nd.getMonth(); // 0-indexed
+    // Bir sonraki ay
+    const sonrakiAyYil = buAyNo===11 ? buAyYil+1 : buAyYil;
+    const sonrakiAyNo  = (buAyNo+1) % 12; // 0-indexed
+    // Bir sonraki ayın kaç günü var?
+    const ayinSonGunu = new Date(sonrakiAyYil, sonrakiAyNo+1, 0).getDate();
+    const hedefGun    = Math.min(gun, ayinSonGunu);
+    nd.setDate(1); // önce 1'e çek taşma olmasın
+    nd.setFullYear(sonrakiAyYil);
+    nd.setMonth(sonrakiAyNo);
+    nd.setDate(hedefGun);
+  } else if(tekrar==='yillik'){
+    nd.setFullYear(nd.getFullYear()+1);
+  } else if(tekrar==='haftalik'){
+    nd.setDate(nd.getDate()+7);
+  }
   return nd;
 }
 
@@ -4048,7 +4065,9 @@ function saveOdeme(){
   let actualTarih=tarih;
   if(gun&&['sgk','kira','kredi'].includes(selectedOdemeTip)){
     const base=new Date(tarih);
-    base.setDate(gun);
+    // Ayın son günü aşmasın
+    const ayinSonGunu=new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+    base.setDate(Math.min(gun, ayinSonGunu));
     actualTarih=base.toISOString().split('T')[0];
   }
 
@@ -4079,24 +4098,38 @@ function saveOdeme(){
 function editOdeme(id){
   const o=S.odemeler.find(x=>x.id===id);
   if(!o) return;
+
+  // Önce takvim sayfasına git
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pageEl=document.getElementById('page-takvim');
+  if(pageEl) pageEl.classList.add('active');
+  const navBtn=document.querySelector('.nav-btn[onclick*="takvim"]');
+  if(navBtn) navBtn.classList.add('active');
+  renderTakvim(); renderCalendar(); renderOdemeList();
+
   editingOdemeId=id;
   selectedOdemeTip=o.tip;
   document.getElementById('odeme-form-wrap').style.display='block';
-  document.getElementById('odeme-form-title').textContent='Ödeme Düzenle';
+  document.getElementById('odeme-form-title').textContent='✏ Ödeme Düzenle';
   renderOdemeTipGrid();
   renderOdemeFormFields();
-  // Fill values
+
   setTimeout(()=>{
     ['ad','tutar','tarih','gun','not','ekstre','limit','kalan','banka','bitis'].forEach(f=>{
       const el=document.getElementById('of-'+f);
-      if(el&&o[f]) el.value=o[f];
+      if(el&&o[f]!==undefined) el.value=o[f];
     });
-    // son-gun özel alan adı
     const sonGunEl=document.getElementById('of-son-gun');
     if(sonGunEl&&o.sonGun) sonGunEl.value=o.sonGun;
     const tekrarEl=document.getElementById('of-tekrar');
     if(tekrarEl&&o.tekrar) tekrarEl.value=o.tekrar;
-  },50);
+    const odemeHesapEl=document.getElementById('of-odeme-hesap');
+    if(odemeHesapEl&&o.odemeHesap) odemeHesapEl.value=o.odemeHesap;
+    // Forma scroll et
+    const formEl=document.getElementById('odeme-form-wrap');
+    if(formEl) formEl.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
 }
 function delOdeme(id){
   if(!confirm('Bu ödeme kaydı silinecek. Emin misin?')) return;
