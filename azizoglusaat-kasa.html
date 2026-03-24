@@ -1803,7 +1803,7 @@ function setSyncIndicator(text, color){
 }
 
 function save(){
-    const saveData = {...S, bankaHareketler: S_bankaHareketler};
+    const saveData = {...S, bankaHareketler: S_bankaHareketler, _savedAt: new Date().toISOString()};
     try{ localStorage.setItem('kasapro_v1', JSON.stringify(saveData)); }catch(e){}
     _pendingSync = true;
   try{ localStorage.setItem('kasapro_pending','1'); }catch(e){}
@@ -1883,35 +1883,47 @@ setInterval(async ()=>{
 
 async function load(){
   // Önce localStorage'dan yükle (hızlı başlangıç)
+  let localData = null;
+  let localTime = 0;
   try{
     const d = localStorage.getItem('kasapro_v1');
-    if(d) _mergeState(JSON.parse(d));
+    if(d){
+      localData = JSON.parse(d);
+      // Yerel verinin zaman damgasını al
+      localTime = localData._savedAt ? new Date(localData._savedAt).getTime() : 0;
+      _mergeState(localData);
+    }
   }catch(e){}
 
-  // Bekleyen sync varsa önce onu gönder
   const hasPending = localStorage.getItem('kasapro_pending');
 
   try{
     setSyncIndicator('☁ Yükleniyor...', 'var(--t3)');
     const rows = await supaFetch('GET');
+
     if(rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0){
-      if(hasPending){
-        // Bekleyen yerel değişiklik var — önce bunu gönder
-        setSyncIndicator('🔄 Yerel değişiklikler yükleniyor...', 'var(--amber)');
+      const remoteTime = rows[0].updated_at ? new Date(rows[0].updated_at).getTime() : 0;
+
+      if(hasPending || localTime > remoteTime){
+        // Yerel veri daha yeni veya bekleyen değişiklik var → Supabase'e gönder
+        setSyncIndicator('🔄 Yerel değişiklikler senkronize ediliyor...', 'var(--amber)');
         await syncToSupabase();
-      } else {
+      } else if(remoteTime > localTime){
+        // Supabase daha yeni → çek
         _mergeState(rows[0].data);
-        localStorage.setItem('kasapro_v1', JSON.stringify(S));
-        _lastSyncedAt = rows[0].updated_at || new Date().toISOString();
+        localStorage.setItem('kasapro_v1', JSON.stringify({...S, bankaHareketler: S_bankaHareketler}));
+        _lastSyncedAt = rows[0].updated_at;
+        setSyncIndicator('☁ Senkron', 'var(--t3)');
+      } else {
         setSyncIndicator('☁ Senkron', 'var(--t3)');
       }
     } else {
-      if(hasPending) await syncToSupabase();
+      // Supabase boş — yerel veri varsa gönder
+      if(localData && (S.giris.length||S.pazar.length)) await syncToSupabase();
       else setSyncIndicator('☁ Yeni', 'var(--t3)');
     }
   }catch(e){
     setSyncIndicator('📵 Çevrimdışı', 'var(--amber)');
-    // localStorage verisi zaten yüklendi, devam et
   }
   if(!S.giris.length&&!S.pazar.length) seedDemo();
 }
