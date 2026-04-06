@@ -719,6 +719,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   <div class="ph">
     <div class="ph-left"><h1>Ana Kasa</h1><p>Nakit akış takibi</p></div>
     <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-green btn-sm" onclick="openKasaHareketModal()">+ Nakit Hareket</button>
       <button class="btn btn-sm btn-ghost" onclick="nav('ayarlar',document.querySelector('.nav-btn[onclick*=ayarlar]'))">⚙ Açılış Bakiyesi Ayarla</button>
     </div>
   </div>
@@ -1322,6 +1323,42 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
+<!-- ══ KASA HAREKET MODAL ══ -->
+<div id="kasa-hareket-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1002;align-items:center;justify-content:center">
+  <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:24px;width:min(420px,95vw)">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px">💵 Nakit Hareket Ekle</div>
+    <div class="fg fg2" style="margin-bottom:10px">
+      <div class="fl">
+        <label>Hareket Türü</label>
+        <select id="kh-tip">
+          <option value="disari_giris">💰 Dışarıdan Nakit Geldi</option>
+          <option value="kendi_param">👤 Kasaya Para Koydum</option>
+          <option value="sayim">🔢 Kasa Sayımı Düzeltmesi (+)</option>
+          <option value="sayim_eksik">🔢 Kasa Sayımı Düzeltmesi (−)</option>
+          <option value="diger_giris">↙ Diğer Giriş</option>
+          <option value="diger_cikis">↗ Diğer Çıkış</option>
+        </select>
+      </div>
+      <div class="fl">
+        <label>Tarih</label>
+        <input type="date" id="kh-tarih">
+      </div>
+    </div>
+    <div class="fl" style="margin-bottom:10px">
+      <label>Tutar (₺)</label>
+      <input type="number" id="kh-tutar" placeholder="0" min="0" style="font-size:18px;font-weight:600;text-align:center">
+    </div>
+    <div class="fl" style="margin-bottom:16px">
+      <label>Açıklama</label>
+      <input type="text" id="kh-aciklama" placeholder="Ne için?">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-green" style="flex:1" onclick="saveKasaHareket()">Kaydet</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('kasa-hareket-overlay').style.display='none'">İptal</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ BANKA HESAPLARI ══ -->
 <div class="page" id="page-bankahesap">
   <div class="ph">
@@ -1376,6 +1413,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
         <select id="bh-m-tip" onchange="bhModalTipChange()">
           <option value="pos">📟 POS Tahsilatı</option>
           <option value="havale">↙ Havale/EFT Girişi</option>
+          <option value="nakit_yatirma">💵 Nakit Yatırma (Kasadan)</option>
           <option value="kkodeme">💳 KK Ödemesi</option>
           <option value="masraf">💸 Banka Masrafı/Komisyon</option>
           <option value="transfer_cikis">→ Transfer Çıkış</option>
@@ -1770,6 +1808,7 @@ let S = {
   }
 };
 let S_bankaHareketler = []; // [{id,tip,bankaAd,tutar,aciklama,tarih,karsiBanka,otomatik}]
+let S_kasaHareketler  = []; // [{id,tip,tutar,aciklama,tarih}] — manuel nakit giriş/çıkış
 let ay = 3, yr = 2026, uid = 5000;
 
 // ════ SUPABASE CONFIG ════
@@ -1803,7 +1842,7 @@ function setSyncIndicator(text, color){
 }
 
 function save(){
-    const saveData = {...S, bankaHareketler: S_bankaHareketler, _savedAt: new Date().toISOString()};
+    const saveData = {...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler, _savedAt: new Date().toISOString()};
     try{ localStorage.setItem('kasapro_v1', JSON.stringify(saveData)); }catch(e){}
     _pendingSync = true;
   try{ localStorage.setItem('kasapro_pending','1'); }catch(e){}
@@ -1819,7 +1858,7 @@ async function syncToSupabase(){
   }
   try{
     const now = new Date().toISOString();
-    await supaFetch('POST', {id:'main', data: {...S, bankaHareketler: S_bankaHareketler}, updated_at: now});
+    await supaFetch('POST', {id:'main', data: {...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler}, updated_at: now});
     _pendingSync = false;
     _lastSyncedAt = now;
     try{ localStorage.removeItem('kasapro_pending'); }catch(e){}
@@ -1911,7 +1950,7 @@ async function load(){
       } else if(remoteTime > localTime){
         // Supabase daha yeni → çek
         _mergeState(rows[0].data);
-        localStorage.setItem('kasapro_v1', JSON.stringify({...S, bankaHareketler: S_bankaHareketler}));
+        localStorage.setItem('kasapro_v1', JSON.stringify({...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler}));
         _lastSyncedAt = rows[0].updated_at;
         setSyncIndicator('☁ Senkron', 'var(--t3)');
       } else {
@@ -1949,7 +1988,8 @@ function _mergeState(p){
   if(!S.settings.bankaAcilis) S.settings.bankaAcilis={};
   if(p.bankaHareketler) S_bankaHareketler=p.bankaHareketler;
   else if(!S_bankaHareketler.length && p.bankaHareketler) S_bankaHareketler=p.bankaHareketler||[];
-  const all=[...S.giris,...S.pazar,...S.gider,...S.telStok,...S.ikiEl,...S.odemeler,...S.kkHarcamalar,...S_bankaHareketler];
+  if(p.kasaHareketler) S_kasaHareketler=p.kasaHareketler;
+  const all=[...S.giris,...S.pazar,...S.gider,...S.telStok,...S.ikiEl,...S.odemeler,...S.kkHarcamalar,...S_bankaHareketler,...S_kasaHareketler];
   if(all.length) uid=Math.max(...all.map(r=>r.id||0),uid)+1;
 }
 
@@ -4398,36 +4438,46 @@ function kasaGunlukHesapla(dateStr){
   const nakitGiris=nakitSatislar.reduce((s,r)=>s+r.fiyat*r.adet,0)
                  +karmaSatislar.reduce((s,r)=>s+(r.karmaNakit||0),0);
 
-  // Nakit ÇIKIŞ: SADECE nakit ödeme yöntemi seçilen giderler
+  // Nakit ÇIKIŞ: giderler + takvim ödemeleri + bankaya nakit yatırma
   const d=new Date(dateStr);
   const ayNo=d.getMonth()+1, yrNo=d.getFullYear();
-  // Giderler ay bazlı — tarihi varsa o tarihe, yoksa ayın 1'ine düş
   const nakitGiderler=S.gider.filter(r=>{
     const isNakit=(r.odemeYontemi||'Nakit')==='Nakit';
     if(!isNakit) return false;
     if(r.tarih) return r.tarih===dateStr;
-    // Tarihi yoksa ayın 1'inde düş
     return r.ay===ayNo&&(r.yr||2026)===yrNo&&d.getDate()===1;
   });
   const nakitGiderToplam=nakitGiderler.reduce((s,r)=>s+r.tutar,0);
 
-  // Nakit takvim ödemeleri — odemeHesap=Nakit olanlar AND ödendi işaretlenenler
+  // Nakit takvim ödemeleri
   const takOccs=getOccurrencesForDate(dateStr);
   const nakitTakOdemeler=takOccs.filter(o=>{
     if(!isPaid(o.paidKey)) return false;
-    // Gerçekte hangi hesaptan ödendi? getPaidHesap varsa onu kullan, yoksa varsayılan
     const gercekHesap=getPaidHesap(o.paidKey)||o.odemeHesap||'Nakit';
     return gercekHesap==='Nakit';
   });
   const nakitTakToplam=nakitTakOdemeler.reduce((s,o)=>s+o.tutar,0);
 
+  // Bankaya nakit yatırma (kasadan banka hesabına)
+  const nakitYatirmalar=S_bankaHareketler.filter(h=>h.tip==='nakit_yatirma'&&h.tarih===dateStr);
+  const nakitYatirmaToplam=nakitYatirmalar.reduce((s,h)=>s+h.tutar,0);
+
+  // Manuel kasa hareketleri (dışarıdan nakit, kasa sayımı düzeltmesi vs.)
+  const kasaManuelGiris  = S_kasaHareketler.filter(h=>h.tarih===dateStr&&h.yon===+1);
+  const kasaManuelCikis  = S_kasaHareketler.filter(h=>h.tarih===dateStr&&h.yon===-1);
+  const kasaManuelGirisToplam = kasaManuelGiris.reduce((s,h)=>s+h.tutar,0);
+  const kasaManuelCikisToplam = kasaManuelCikis.reduce((s,h)=>s+h.tutar,0);
+
   return {
-    giris: nakitGiris,
-    cikis: nakitGiderToplam+nakitTakToplam,
+    giris: nakitGiris + kasaManuelGirisToplam,
+    cikis: nakitGiderToplam+nakitTakToplam+nakitYatirmaToplam+kasaManuelCikisToplam,
     detay:{
       satislar: nakitSatislar,
       giderler: nakitGiderler,
       takOdemeler: nakitTakOdemeler,
+      nakitYatirmalar,
+      kasaManuelGiris,
+      kasaManuelCikis,
     }
   };
 }
@@ -4548,7 +4598,34 @@ function renderAnaKasa(){
       </div>`;
     }).join('');
 
-    detayEl.innerHTML=sHTML+gHTML+tHTML;
+    const yHTML=(bugunGun.detay.nakitYatirmalar||[]).map(h=>`
+      <div class="kasa-flow-row">
+        <div class="kasa-flow-icon" style="background:rgba(251,191,36,.2)">🏦</div>
+        <div><div class="kasa-flow-label">Bankaya Nakit Yatırma — ${h.bankaAd}</div><div class="kasa-flow-sub">${h.aciklama||''}</div></div>
+        <div class="kasa-flow-amount neg">−${fmt(h.tutar)}</div>
+      </div>`).join('');
+
+    const mGirisHTML=(bugunGun.detay.kasaManuelGiris||[]).map(h=>`
+      <div class="kasa-flow-row" style="border-color:var(--green2)">
+        <div class="kasa-flow-icon" style="background:var(--green3)">${h.icon||'💵'}</div>
+        <div><div class="kasa-flow-label">${h.aciklama||h.tip}</div><div class="kasa-flow-sub" style="color:var(--green)">${h.tipLabel||''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="kasa-flow-amount pos">+${fmt(h.tutar)}</div>
+          <button class="btn btn-red btn-sm" style="font-size:10px;padding:1px 6px" onclick="delKasaHareket(${h.id})">×</button>
+        </div>
+      </div>`).join('');
+
+    const mCikisHTML=(bugunGun.detay.kasaManuelCikis||[]).map(h=>`
+      <div class="kasa-flow-row" style="border-color:rgba(248,113,113,.2)">
+        <div class="kasa-flow-icon" style="background:rgba(248,113,113,.15)">${h.icon||'📤'}</div>
+        <div><div class="kasa-flow-label">${h.aciklama||h.tip}</div><div class="kasa-flow-sub" style="color:var(--red)">${h.tipLabel||''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="kasa-flow-amount neg">−${fmt(h.tutar)}</div>
+          <button class="btn btn-red btn-sm" style="font-size:10px;padding:1px 6px" onclick="delKasaHareket(${h.id})">×</button>
+        </div>
+      </div>`).join('');
+
+    detayEl.innerHTML=sHTML+mGirisHTML+gHTML+tHTML+yHTML+mCikisHTML;
   }
 
   // Özet
@@ -5563,20 +5640,59 @@ function renderSaatTelRapor(){
   :'<div class="empty" style="padding:20px"><p>Bu filtreye uygun satış yok</p></div>';
 }
 
-// ════ BANKA HESAPLARI ════
+// ════ KASA MANUELHAREKETLERİ ════
+const KASA_TIP = {
+  disari_giris: {label:'Dışarıdan Nakit',    icon:'💰', yon:+1},
+  kendi_param:  {label:'Kasaya Para Koydum', icon:'👤', yon:+1},
+  sayim:        {label:'Sayım Düzeltme (+)', icon:'🔢', yon:+1},
+  sayim_eksik:  {label:'Sayım Düzeltme (−)', icon:'🔢', yon:-1},
+  diger_giris:  {label:'Diğer Giriş',        icon:'↙',  yon:+1},
+  diger_cikis:  {label:'Diğer Çıkış',        icon:'↗',  yon:-1},
+};
+
+function openKasaHareketModal(){
+  safeSet('kh-tarih', new Date().toISOString().split('T')[0]);
+  safeSet('kh-tutar','');
+  safeSet('kh-aciklama','');
+  document.getElementById('kasa-hareket-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('kh-tutar')?.focus(),100);
+}
+
+function saveKasaHareket(){
+  const tip    = document.getElementById('kh-tip')?.value||'diger_giris';
+  const tutar  = +document.getElementById('kh-tutar')?.value||0;
+  const tarih  = document.getElementById('kh-tarih')?.value||'';
+  const aciklama = document.getElementById('kh-aciklama')?.value||'';
+  if(!tutar||!tarih) return;
+  const meta = KASA_TIP[tip];
+  S_kasaHareketler.push({
+    id: uid++, tip, tutar, tarih, aciklama,
+    yon: meta.yon,
+    icon: meta.icon,
+    tipLabel: meta.label,
+  });
+  document.getElementById('kasa-hareket-overlay').style.display='none';
+  save(); renderAnaKasa();
+}
+
+function delKasaHareket(id){
+  S_kasaHareketler = S_kasaHareketler.filter(x=>x.id!==id);
+  save(); renderAnaKasa();
+}
 let _bhAktifBanka = null;
 let _bhEditId = null;
 
 const BH_TIP = {
-  pos:           {label:'POS Tahsilatı',    yon:+1, icon:'📟', renk:'var(--green)'},
-  havale:        {label:'Havale/EFT Giriş', yon:+1, icon:'↙',  renk:'var(--green)'},
-  kkodeme:       {label:'KK Ödemesi',       yon:-1, icon:'💳', renk:'var(--red)'},
-  masraf:        {label:'Masraf/Komisyon',  yon:-1, icon:'💸', renk:'var(--red)'},
-  transfer_cikis:{label:'Transfer Çıkış',  yon:-1, icon:'→',  renk:'var(--amber)'},
-  transfer_giris:{label:'Transfer Giriş',  yon:+1, icon:'←',  renk:'var(--blue)'},
-  kredi:         {label:'Kredi/Taksit',     yon:-1, icon:'📋', renk:'var(--red)'},
-  diger_cikis:   {label:'Diğer Çıkış',     yon:-1, icon:'↗',  renk:'var(--red)'},
-  otomatik:      {label:'Otomatik',         yon:+1, icon:'⚡', renk:'var(--purple)'},
+  pos:           {label:'POS Tahsilatı',      yon:+1, icon:'📟', renk:'var(--green)'},
+  havale:        {label:'Havale/EFT Giriş',   yon:+1, icon:'↙',  renk:'var(--green)'},
+  nakit_yatirma: {label:'Nakit Yatırma',      yon:+1, icon:'💵', renk:'var(--green)'},
+  kkodeme:       {label:'KK Ödemesi',         yon:-1, icon:'💳', renk:'var(--red)'},
+  masraf:        {label:'Masraf/Komisyon',    yon:-1, icon:'💸', renk:'var(--red)'},
+  transfer_cikis:{label:'Transfer Çıkış',    yon:-1, icon:'→',  renk:'var(--amber)'},
+  transfer_giris:{label:'Transfer Giriş',    yon:+1, icon:'←',  renk:'var(--blue)'},
+  kredi:         {label:'Kredi/Taksit',       yon:-1, icon:'📋', renk:'var(--red)'},
+  diger_cikis:   {label:'Diğer Çıkış',       yon:-1, icon:'↗',  renk:'var(--red)'},
+  otomatik:      {label:'Otomatik',           yon:+1, icon:'⚡', renk:'var(--purple)'},
 };
 
 // Bir bankanın bakiyesini hesapla
