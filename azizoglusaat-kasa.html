@@ -2843,7 +2843,7 @@ function delP(id){
 let editingGiderId = null;
 
 function editGd(id){
-  const r=S.gider.find(x=>x.id===id);
+  const r=S.gider.find(x=>x.id===id||x.id===+id);
   if(!r) return;
   editingGiderId=id;
   safeSet('gd-desc', r.desc);
@@ -2902,7 +2902,7 @@ function renderGiderList(){
       <td class="muted tiny">${r.not||'—'}</td>
       <td style="display:flex;gap:4px">
         <button class="btn btn-sm btn-ghost" onclick="editGd(${r.id})" title="Düzenle">✏</button>
-        <button class="btn btn-red btn-sm" onclick="delGd(${r.id})" title="Sil">×</button>
+        <button class="btn btn-red btn-sm" onclick="if(confirm('Bu gider silinecek. Emin misin?'))delGd(${r.id})" title="Sil">×</button>
       </td></tr>`;
   }).join(''):`<tr><td colspan="7" class="empty"><p>Gider yok</p></td></tr>`;
   const tot=rows.reduce((s,r)=>s+r.tutar,0);
@@ -2914,8 +2914,8 @@ function renderGiderList(){
     <div class="sr red" style="min-width:180px"><span class="sr-label">Toplam</span><span class="sr-val">${fmt(tot)}</span></div></div>`;
 }
 function delGd(id){
-  if(editingGiderId===id) gdCancelEdit();
-  S.gider=S.gider.filter(r=>r.id!==id);
+  if(editingGiderId===id||editingGiderId===+id) gdCancelEdit();
+  S.gider=S.gider.filter(r=>r.id!==id&&r.id!==+id);
   save(); renderAll();
 }
 
@@ -4002,7 +4002,7 @@ function renderTakvim(){
   kkler.forEach(kart=>{
     const kartHarcamalar=(S.kkHarcamalar||[]).filter(h=>h.kartId===kart.id);
     kartHarcamalar.forEach(h=>{
-      const dagilim=kkhAyDagilim(h.kartId,h.tarih,h.tutar,h.taksit);
+      const dagilim=kkhAyDagilim(String(h.kartId),h.tarih,h.tutar,h.taksit);
       dagilim.forEach(d=>{
         const ayOdendi=Object.keys(S.odemePaid||{}).some(k=>
           k.startsWith(`${kart.id}_`)&&isPaid(k)&&
@@ -4214,10 +4214,21 @@ function renderOdemeFormFields(){
   }
 }
 function saveOdeme(){
-  const ad=document.getElementById('of-ad')?.value;
-  const tutar=+document.getElementById('of-tutar')?.value||0;
-  const tarih=document.getElementById('of-tarih')?.value||new Date().toISOString().split('T')[0];
-  if(!ad||!tutar) return;
+  const adEl=document.getElementById('of-ad');
+  const tutarEl=document.getElementById('of-tutar');
+  const tarihEl=document.getElementById('of-tarih');
+
+  if(!adEl||!tutarEl){
+    alert('Form alanları yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+    return;
+  }
+
+  const ad=adEl.value?.trim();
+  const tutar=+tutarEl.value||0;
+  const tarih=tarihEl?.value||new Date().toISOString().split('T')[0];
+
+  if(!ad){ alert('Ödeme adı zorunludur!'); adEl.focus(); return; }
+  if(!tutar){ alert('Tutar zorunludur!'); tutarEl.focus(); return; }
 
   const gun=+document.getElementById('of-gun')?.value||null;
   const tekrarEl=document.getElementById('of-tekrar');
@@ -4249,16 +4260,16 @@ function saveOdeme(){
     kalanTaksit: +document.getElementById('of-kalan')?.value||null,
     banka: document.getElementById('of-banka')?.value||null,
     bitis: document.getElementById('of-bitis')?.value||null,
-    istisnalar: editingOdemeId?(S.odemeler.find(o=>o.id===editingOdemeId)?.istisnalar||[]):[],
+    istisnalar: editingOdemeId?(S.odemeler.find(o=>String(o.id)===String(editingOdemeId))?.istisnalar||[]):[],
   };
 
-  if(editingOdemeId){ S.odemeler=S.odemeler.map(o=>o.id===editingOdemeId?obj:o); }
+  if(editingOdemeId){ S.odemeler=S.odemeler.map(o=>String(o.id)===String(editingOdemeId)?obj:o); }
   else { S.odemeler.push(obj); }
   closeOdemeForm();
   renderAll();
 }
 function editOdeme(id){
-  const o=S.odemeler.find(x=>x.id===id);
+  const o=S.odemeler.find(x=>String(x.id)===String(id));
   if(!o) return;
 
   // Önce takvim sayfasına git
@@ -4306,7 +4317,7 @@ function editOdeme(id){
 }
 function delOdeme(id){
   if(!confirm('Bu ödeme kaydı silinecek. Emin misin?')) return;
-  S.odemeler=S.odemeler.filter(o=>o.id!==id);
+  S.odemeler=S.odemeler.filter(o=>String(o.id)!==String(id));
   renderAll();
 }
 
@@ -4989,7 +5000,7 @@ function addKkharcama(){
   }
 
   if(editingKkhId){
-    const idx=S.kkHarcamalar.findIndex(x=>x.id===editingKkhId);
+    const idx=S.kkHarcamalar.findIndex(x=>String(x.id)===String(editingKkhId));
     if(idx!==-1) S.kkHarcamalar[idx]={...S.kkHarcamalar[idx],kartId:kart.id,kartAd:kart.ad,tarih,tutar,taksit,aciklama};
     kkhCancelEdit();
   } else {
@@ -5016,7 +5027,7 @@ function kkhCancelEdit(){
 }
 
 function editKkh(id){
-  const h=S.kkHarcamalar.find(x=>x.id===id);
+  const h=S.kkHarcamalar.find(x=>String(x.id)===String(id));
   if(!h) return;
   editingKkhId=id;
   const kartSel=document.getElementById('kkh-kart'); if(kartSel) kartSel.value=h.kartId;
@@ -5033,7 +5044,7 @@ function editKkh(id){
 
 function delKkh(id){
   if(!confirm('Bu harcama silinecek?')) return;
-  S.kkHarcamalar=S.kkHarcamalar.filter(x=>x.id!==id);
+  S.kkHarcamalar=S.kkHarcamalar.filter(x=>String(x.id)!==String(id));
   kkhRehesapla();
   save();
   renderKkharcama();
@@ -5081,13 +5092,13 @@ function renderKkharcama(){
       ozetEl.innerHTML=kkler.map(kart=>{
         const ayKeyFull=`${kart.id}_${buAyKey}`;
         const buAyEkstre=(S.kkAylikTutar||{})[ayKeyFull]||0;
-        const kartHarcamalar=S.kkHarcamalar.filter(h=>h.kartId===kart.id);
+        const kartHarcamalar=S.kkHarcamalar.filter(h=>String(h.kartId)===String(kart.id));
 
         // Kullanılan limit = tüm harcamaların henüz ödenmemiş taksit tutarları
         // Bir harcamanın her taksidi ayrı bir aya düşer, o ay ödendi işaretlenirse düşer
         let kullanilanLimit=0;
         kartHarcamalar.forEach(h=>{
-          const dagilim=kkhAyDagilim(h.kartId,h.tarih,h.tutar,h.taksit);
+          const dagilim=kkhAyDagilim(String(h.kartId),h.tarih,h.tutar,h.taksit);
           dagilim.forEach(d=>{
             const paidKey=`${kart.id}_${d.ekstreYil}-${String(d.ekstreAyNo).padStart(2,'0')}`;
             // Takvim ödeme kaydı ödendi mi?
@@ -5129,10 +5140,10 @@ function renderKkharcama(){
 }
 
 function renderKkharcamaList(){
-  const kartFlt=+document.getElementById('kkh-filter-kart')?.value||0;
+  const kartFltStr=String(document.getElementById('kkh-filter-kart')?.value||'').trim();
   const ayFlt=document.getElementById('kkh-filter-ay')?.value||'';
   let rows=[...S.kkHarcamalar];
-  if(kartFlt) rows=rows.filter(h=>h.kartId===kartFlt);
+  if(kartFltStr) rows=rows.filter(h=>String(h.kartId)===kartFltStr);
   if(ayFlt) rows=rows.filter(h=>h.tarih.startsWith(ayFlt));
   rows.sort((a,b)=>b.tarih.localeCompare(a.tarih));
 
@@ -5143,7 +5154,7 @@ function renderKkharcamaList(){
     <th>Tarih</th><th>Kart</th><th>Açıklama</th>
     <th class="r">Tutar</th><th>Taksit</th><th>Aylara Dağılım</th><th></th>
   </tr></thead><tbody>${rows.map(h=>{
-    const dagilim=kkhAyDagilim(h.kartId,h.tarih,h.tutar,h.taksit);
+    const dagilim=kkhAyDagilim(String(h.kartId),h.tarih,h.tutar,h.taksit);
     const dagilimStr=dagilim.length<=1
       ? dagilim[0]?.ayLabel||'—'
       : `${dagilim[0].ayLabel} → ${dagilim[dagilim.length-1].ayLabel}`;
