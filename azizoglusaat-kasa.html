@@ -208,8 +208,8 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .cal-nav button{background:none;border:1px solid var(--b1);border-radius:var(--r3);color:var(--t2);padding:4px 10px;cursor:pointer;font-size:13px;transition:all .12s}
 .cal-nav button:hover{background:var(--s2);color:var(--t1)}
 .cal-month-title{font-size:15px;font-weight:600;min-width:140px;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.cal-dow{padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--b1)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:100%}
+.cal-dow{padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--b1);background:var(--s2)}
 .cal-cell{min-height:130px;padding:7px;border-right:1px solid var(--b1);border-bottom:1px solid var(--b1);position:relative;cursor:pointer;transition:background .1s}
 .cal-cell:nth-child(7n){border-right:none}
 .cal-cell:hover{background:rgba(255,255,255,.02)}
@@ -1586,6 +1586,19 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 
   <div class="card">
     <div class="card-header">
+      <div class="card-title">📦 Pazaryeri Ödeme Günleri</div>
+      <div style="font-size:11px;color:var(--t3)">Takvimde hangi günler ödeme hatırlatması çıksın</div>
+    </div>
+    <div id="pazar-odeme-settings"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input type="text" id="s-yeni-pazar-platform" placeholder="Platform adı (ör: İkas)" style="max-width:180px">
+      <input type="color" id="s-yeni-pazar-renk" value="#818cf8" style="width:44px;height:36px;padding:2px;border-radius:6px;border:1px solid var(--b1);background:var(--s2)">
+      <button class="btn btn-green btn-sm" onclick="addPazarOdemeAyar()">+ Ekle</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
       <div class="card-title">⌚ Saat Marka Listesi</div>
       <div style="font-size:11px;color:var(--t3)">Kasa girişinde Saat seçilince aranabilir listede çıkar</div>
     </div>
@@ -1804,7 +1817,11 @@ let S = {
       {id:4, ad:'QNB', renk:'#fbbf24'},
       {id:5, ad:'Akbank', renk:'#f87171'},
     ],
-    bankaAcilis: {}  // {bankaAd: {tutar, tarih}}
+    bankaAcilis: {},  // {bankaAd: {tutar, tarih, limit}}
+    pazarOdemeAyarlari: [
+      {platform:'Trendyol',    aktif:true,  haftaGunleri:[2,4], renk:'#f97316'}, // Sal, Per
+      {platform:'Hepsiburada', aktif:true,  haftaGunleri:[3],   renk:'#eab308'}, // Çar
+    ] // kullanıcı istediği platformları ekleyebilir
   }
 };
 let S_bankaHareketler = []; // [{id,tip,bankaAd,tutar,aciklama,tarih,karsiBanka,otomatik}]
@@ -1986,6 +2003,10 @@ function _mergeState(p){
   if(!S.odemePaid) S.odemePaid={};
   if(!S.kkManuelTutar) S.kkManuelTutar={};
   if(!S.settings.bankaAcilis) S.settings.bankaAcilis={};
+  if(!S.settings.pazarOdemeAyarlari) S.settings.pazarOdemeAyarlari=[
+    {platform:'Trendyol',    aktif:true, haftaGunleri:[2,4], renk:'#f97316'},
+    {platform:'Hepsiburada', aktif:true, haftaGunleri:[3],   renk:'#eab308'},
+  ];
   if(p.bankaHareketler) S_bankaHareketler=p.bankaHareketler;
   else if(!S_bankaHareketler.length && p.bankaHareketler) S_bankaHareketler=p.bankaHareketler||[];
   if(p.kasaHareketler) S_kasaHareketler=p.kasaHareketler;
@@ -3186,6 +3207,7 @@ function renderPlSettings(){
   renderBankaKomTable();
   renderPilFiyatSettings();
   renderSaatMarkaList();
+  renderPazarOdemeSettings();
   renderBankaHesapList();
   // Gider form ödeme select güncelle
   refreshGiderOdemeSelect();
@@ -3242,6 +3264,58 @@ function refreshPazarMarkaList(){
   if(!dl) return;
   const markalar=S.settings.saatMarkalar||[];
   dl.innerHTML=markalar.map(m=>`<option value="${m}">`).join('');
+}
+
+function renderPazarOdemeSettings(){
+  const el=document.getElementById('pazar-odeme-settings');
+  if(!el) return;
+  const ayarlar=S.settings.pazarOdemeAyarlari||[];
+  const GUNLER=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+  el.innerHTML=ayarlar.map((a,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--s2);border-radius:var(--r3);margin-bottom:6px;flex-wrap:wrap">
+      <div style="width:10px;height:10px;border-radius:50%;background:${a.renk};flex-shrink:0"></div>
+      <span style="font-weight:500;min-width:120px">${a.platform}</span>
+      <div style="display:flex;gap:4px">
+        ${[1,2,3,4,5,6,0].map(g=>`
+          <button class="btn btn-sm${(a.haftaGunleri||[]).includes(g)?' btn-outline':' btn-ghost'}"
+            style="${(a.haftaGunleri||[]).includes(g)?`border-color:${a.renk};color:${a.renk}`:''};font-size:10px;padding:2px 7px;min-height:26px"
+            onclick="togglePazarGun(${i},${g})">${GUNLER[g]}</button>`).join('')}
+      </div>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer">
+        <input type="checkbox" ${a.aktif?'checked':''} onchange="togglePazarAktif(${i},this.checked)"> Aktif
+      </label>
+      <button class="btn btn-red btn-sm" style="font-size:10px;padding:2px 8px;margin-left:auto" onclick="delPazarOdemeAyar(${i})">×</button>
+    </div>`).join('')||'<div class="empty" style="padding:12px"><p>Pazaryeri ödeme günü eklenmemiş</p></div>';
+}
+
+function togglePazarGun(idx, gun){
+  const a=S.settings.pazarOdemeAyarlari[idx];
+  if(!a) return;
+  const gunler=a.haftaGunleri||[];
+  if(gunler.includes(gun)) a.haftaGunleri=gunler.filter(g=>g!==gun);
+  else a.haftaGunleri=[...gunler,gun].sort();
+  save(); renderPazarOdemeSettings(); renderCalendar();
+}
+
+function togglePazarAktif(idx, aktif){
+  if(S.settings.pazarOdemeAyarlari[idx]) S.settings.pazarOdemeAyarlari[idx].aktif=aktif;
+  save(); renderCalendar();
+}
+
+function addPazarOdemeAyar(){
+  const platform=document.getElementById('s-yeni-pazar-platform')?.value.trim();
+  const renk=document.getElementById('s-yeni-pazar-renk')?.value||'#818cf8';
+  if(!platform) return;
+  if(!S.settings.pazarOdemeAyarlari) S.settings.pazarOdemeAyarlari=[];
+  if(S.settings.pazarOdemeAyarlari.find(a=>a.platform===platform)) return;
+  S.settings.pazarOdemeAyarlari.push({platform, aktif:true, haftaGunleri:[], renk});
+  const inp=document.getElementById('s-yeni-pazar-platform'); if(inp) inp.value='';
+  save(); renderPazarOdemeSettings(); renderCalendar();
+}
+
+function delPazarOdemeAyar(idx){
+  S.settings.pazarOdemeAyarlari.splice(idx,1);
+  save(); renderPazarOdemeSettings(); renderCalendar();
 }
 
 function renderSaatMarkaList(){
@@ -3581,7 +3655,8 @@ function getOdemeOccurrences(o, fromDate, toDate){
     while(cur<=effectiveTo && safety<120){
       safety++;
       if(cur>=from){
-        const dateStr=cur.toISOString().split('T')[0];
+        const isGunu=sonrakiIsGunu(cur);
+        const dateStr=isGunu.toISOString().split('T')[0];
         const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
         if(exc){
           if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar);continue;}
@@ -3598,7 +3673,9 @@ function getOdemeOccurrences(o, fromDate, toDate){
 
   if(o.tekrar==='none'||!o.tekrar){
     const d=new Date(o.tarih);
-    if(d>=from&&d<=to) results.push({...o,_occ:o.tarih,_origId:o.id});
+    const isGunu=sonrakiIsGunu(d);
+    const dateStr=isGunu.toISOString().split('T')[0];
+    if(isGunu>=from&&isGunu<=to) results.push({...o,_occ:dateStr,_origId:o.id});
     return results;
   }
 
@@ -3610,7 +3687,8 @@ function getOdemeOccurrences(o, fromDate, toDate){
   while(cur<=effectiveTo2&&safety<120){
     safety++;
     if(cur>=from){
-      const dateStr=cur.toISOString().split('T')[0];
+      const isGunu=sonrakiIsGunu(cur);
+      const dateStr=isGunu.toISOString().split('T')[0];
       const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
       if(exc){
         if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar,orijinalGun);continue;}
@@ -3787,15 +3865,17 @@ function renderCalendar(){
     const dayTelSat=S.giris.filter(r=>r.tarih===dateStr&&r.kat==='Telefon');
     const dayIkiElSat=S.giris.filter(r=>r.tarih===dateStr&&r.kat==='2. El Telefon');
     const dayPazar=S.pazar.filter(r=>r.tarih===dateStr).length;
-    // Pazaryeri ödeme günleri
-    const haftaGunu = new Date(dateStr+'T12:00:00').getDay(); // 0=Paz, 2=Sal, 3=Çar, 4=Per
-    const isTrendyolGun = haftaGunu===2||haftaGunu===4; // Salı veya Perşembe
-    const isHepsiGun    = haftaGunu===3; // Çarşamba
-    // Zaten işlenmiş mi? (o güne Akbank hareketi var mı)
-    const trendyolIslendi = S_bankaHareketler.some(h=>h.tarih===dateStr&&h.aciklama&&h.aciklama.includes('Trendyol'));
-    const hepsiIslendi    = S_bankaHareketler.some(h=>h.tarih===dateStr&&h.aciklama&&h.aciklama.includes('Hepsiburada'));
+    // Pazaryeri ödeme günleri — tatil/hafta sonuysa sonraki iş gününe ötele
+    const pazarAyarlar = S.settings.pazarOdemeAyarlari||[];
 
-    const hasEvent=dayOccs.length>0||daySaatSat.length>0||dayTelSat.length>0||dayIkiElSat.length>0||dayPazar>0||isTrendyolGun||isHepsiGun;
+    const hasEvent=dayOccs.length>0||daySaatSat.length>0||dayTelSat.length>0||dayIkiElSat.length>0||dayPazar>0||
+      pazarAyarlar.some(a=>a.aktif&&(a.haftaGunleri||[]).some(g=>{
+        const cur=new Date(dateStr+'T12:00:00');
+        const pztFark=(cur.getDay()===0)?-6:1-cur.getDay();
+        const hb=new Date(cur); hb.setDate(cur.getDate()+pztFark);
+        const go=g===0?6:g-1; const hg=new Date(hb); hg.setDate(hb.getDate()+go);
+        return sonrakiIsGunu(hg).toISOString().split('T')[0]===dateStr;
+      }));
     html+=`<div class="cal-cell${isToday?' today':''}${isOther?' other-month':''}${hasEvent?' has-event':''}" onclick="calCellClick('${dateStr}')">
       <div class="cal-day-num">${d}</div>`;
     if(daySaatSat.length>0){
@@ -3814,9 +3894,6 @@ function renderCalendar(){
       const ciro=S.pazar.filter(r=>r.tarih===dateStr).reduce((s,r)=>s+r.tutar,0);
       html+=`<div class="cal-event ev-satis" style="background:rgba(96,165,250,.15);color:#60a5fa;border-color:#60a5fa" title="${fmt(ciro)}">📦 ${dayPazar} sipariş · ${fmt(ciro)}</div>`;
     }
-    // Pazaryeri ödeme günleri
-    if(isTrendyolGun) html+=`<div class="cal-event" style="background:${trendyolIslendi?'rgba(74,222,128,.15)':'rgba(249,115,22,.15)'};color:${trendyolIslendi?'#4ade80':'#f97316'};border-left:2px solid ${trendyolIslendi?'#4ade80':'#f97316'};cursor:pointer" onclick="event.stopPropagation();openPazarOdemeModal('Trendyol','${dateStr}')" title="Trendyol ödeme günü">${trendyolIslendi?'✓':'💰'} Trendyol</div>`;
-    if(isHepsiGun) html+=`<div class="cal-event" style="background:${hepsiIslendi?'rgba(74,222,128,.15)':'rgba(234,179,8,.15)'};color:${hepsiIslendi?'#4ade80':'#eab308'};border-left:2px solid ${hepsiIslendi?'#4ade80':'#eab308'};cursor:pointer" onclick="event.stopPropagation();openPazarOdemeModal('Hepsiburada','${dateStr}')" title="Hepsiburada ödeme günü">${hepsiIslendi?'✓':'💰'} Hepsiburada</div>`;
     // Payment events
     dayOccs.slice(0,4).forEach(o=>{
       const t=ODEME_TIPLER[o.tip]||ODEME_TIPLER.diger;
@@ -3826,6 +3903,22 @@ function renderCalendar(){
       html+=`<div class="cal-event ${t.cls}${paidClass}" title="${o.ad} — ${fmt(o.tutar)}${hesapLabel}" onclick="event.stopPropagation();calEventClick('${o.paidKey}','${o.ad.replace(/'/g,"\\'")}',${o.tutar},'${o.odemeHesap||'Nakit'}')">${t.icon} ${o.ad}${paidHesap?' ✓':''}</div>`;
     });
     if(dayOccs.length>4) html+=`<div style="font-size:9px;color:var(--t3);padding-left:4px;margin-top:1px">+${dayOccs.length-4} ödeme daha</div>`;
+
+    // Pazaryeri ödeme günleri — hücre içinde, doğru konumda
+    pazarAyarlar.filter(a=>a.aktif).forEach(a=>{
+      const buGunOdeme = (a.haftaGunleri||[]).some(g=>{
+        const cur = new Date(dateStr+'T12:00:00');
+        const pztFark = (cur.getDay()===0) ? -6 : 1-cur.getDay();
+        const hb = new Date(cur); hb.setDate(cur.getDate()+pztFark);
+        const go = g===0 ? 6 : g-1;
+        const hg = new Date(hb); hg.setDate(hb.getDate()+go);
+        return sonrakiIsGunu(hg).toISOString().split('T')[0] === dateStr;
+      });
+      if(!buGunOdeme) return;
+      const islendi = S_bankaHareketler.some(h=>h.tarih===dateStr&&h.aciklama?.includes(a.platform)&&h.kaynak==='pazar');
+      html+=`<div class="cal-event" style="background:${islendi?'rgba(74,222,128,.15)':`${a.renk}22`};color:${islendi?'#4ade80':a.renk};border-left:2px solid ${islendi?'#4ade80':a.renk};cursor:pointer" onclick="event.stopPropagation();openPazarOdemeModal('${a.platform}','${dateStr}')" title="${a.platform} ödeme günü">${islendi?'✓':'💰'} ${a.platform}</div>`;
+    });
+
     html+='</div>';
   }
   cellsEl.innerHTML=html;
@@ -4167,21 +4260,32 @@ function editOdeme(id){
   renderOdemeTipGrid();
   renderOdemeFormFields();
 
+  // Form alanlarını doldur — 300ms bekle (renderOdemeFormFields DOM'u async oluşturabilir)
   setTimeout(()=>{
-    ['ad','tutar','tarih','gun','not','ekstre','limit','kalan','banka','bitis'].forEach(f=>{
-      const el=document.getElementById('of-'+f);
-      if(el&&o[f]!==undefined) el.value=o[f];
+    // Tüm olası alanları doldur
+    const alanlar = {
+      'of-ad': o.ad,
+      'of-tutar': o.tutar,
+      'of-tarih': o.tarih,
+      'of-gun': o.gun,
+      'of-not': o.not,
+      'of-ekstre': o.ekstreTarih,
+      'of-son-gun': o.sonGun,
+      'of-limit': o.limit,
+      'of-kalan': o.kalanTaksit,
+      'of-banka': o.banka,
+      'of-bitis': o.bitis,
+      'of-tekrar': o.tekrar,
+      'of-odeme-hesap': o.odemeHesap,
+    };
+    Object.entries(alanlar).forEach(([elId, val])=>{
+      const el=document.getElementById(elId);
+      if(el && val!==undefined && val!==null) el.value=val;
     });
-    const sonGunEl=document.getElementById('of-son-gun');
-    if(sonGunEl&&o.sonGun) sonGunEl.value=o.sonGun;
-    const tekrarEl=document.getElementById('of-tekrar');
-    if(tekrarEl&&o.tekrar) tekrarEl.value=o.tekrar;
-    const odemeHesapEl=document.getElementById('of-odeme-hesap');
-    if(odemeHesapEl&&o.odemeHesap) odemeHesapEl.value=o.odemeHesap;
     // Forma scroll et
     const formEl=document.getElementById('odeme-form-wrap');
     if(formEl) formEl.scrollIntoView({behavior:'smooth', block:'start'});
-  }, 100);
+  }, 300);
 }
 function delOdeme(id){
   if(!confirm('Bu ödeme kaydı silinecek. Emin misin?')) return;
@@ -4762,7 +4866,7 @@ let editingKkhId = null;
 
 // Bir harcamanın hangi aylara hangi taksit tutarıyla düştüğünü hesapla
 function kkhAyDagilim(kartId, harcamaTarih, tutar, taksit){
-  const kart = S.odemeler.find(o=>o.id===kartId&&o.tip==='kk');
+  const kart = S.odemeler.find(o=>o.tip==='kk'&&String(o.id)===String(kartId));
   if(!kart) return [];
   const kesimGun = +kart.ekstreTarih||25;
   const t = Math.max(1,+taksit||1);
@@ -4825,7 +4929,7 @@ function kkhKartChange(){
 }
 
 function kkhPreview(){
-  const kartId = +document.getElementById('kkh-kart')?.value||0;
+  const kartId = document.getElementById('kkh-kart')?.value||'';
   const tarih  = document.getElementById('kkh-tarih')?.value||'';
   const tutar  = +document.getElementById('kkh-tutar')?.value||0;
   const taksit = +document.getElementById('kkh-taksit')?.value||1;
@@ -4845,33 +4949,42 @@ function kkhPreview(){
 }
 
 function addKkharcama(){
-  const kartId = +document.getElementById('kkh-kart')?.value||0;
-  const tarih  = document.getElementById('kkh-tarih')?.value||'';
-  const tutar  = +document.getElementById('kkh-tutar')?.value||0;
-  const taksit = +document.getElementById('kkh-taksit')?.value||1;
-  const aciklama = document.getElementById('kkh-aciklama')?.value||'';
-  if(!kartId||!tarih||!tutar) return;
-  const kart = S.odemeler.find(o=>o.id===kartId);
-  if(!kart) return;
+  const kartIdStr = String(document.getElementById('kkh-kart')?.value||'').trim();
+  const tarih     = document.getElementById('kkh-tarih')?.value||'';
+  const tutar     = +document.getElementById('kkh-tutar')?.value||0;
+  const taksit    = +document.getElementById('kkh-taksit')?.value||1;
+  const aciklama  = document.getElementById('kkh-aciklama')?.value||'';
+
+  if(!tarih||!tutar){ alert('Tarih ve tutar zorunludur!'); return; }
+  if(!kartIdStr){ alert('Lütfen bir kredi kartı seçin.\nKart yoksa: Takvim → Ödeme Ekle → Kredi Kartı'); return; }
+
+  // Kartı bul — string karşılaştırması, NaN sorunu yok
+  const kkler = S.odemeler.filter(o=>o.tip==='kk');
+  const kart  = kkler.find(o=>String(o.id)===kartIdStr);
+
+  if(!kart){
+    if(kkler.length===0){
+      alert('Sistemde hiç kredi kartı tanımlı değil.\nTakvim → + Ödeme Ekle → Kredi Kartı ile ekleyin.');
+    } else {
+      alert('Kart bulunamadı. Sayfayı yenileyin ve tekrar deneyin.\nMevcut kartlar: '+kkler.map(k=>k.ad+' ('+k.id+')').join(', '));
+    }
+    return;
+  }
 
   if(editingKkhId){
     const idx=S.kkHarcamalar.findIndex(x=>x.id===editingKkhId);
-    if(idx!==-1) S.kkHarcamalar[idx]={...S.kkHarcamalar[idx],kartId,kartAd:kart.ad,tarih,tutar,taksit,aciklama};
+    if(idx!==-1) S.kkHarcamalar[idx]={...S.kkHarcamalar[idx],kartId:kart.id,kartAd:kart.ad,tarih,tutar,taksit,aciklama};
     kkhCancelEdit();
   } else {
-    S.kkHarcamalar.push({id:uid++,kartId,kartAd:kart.ad,tarih,tutar,taksit,aciklama});
+    S.kkHarcamalar.push({id:uid++,kartId:kart.id,kartAd:kart.ad,tarih,tutar,taksit,aciklama});
   }
-  // Formu sıfırla
   ['kkh-tutar','kkh-aciklama'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const tEl=document.getElementById('kkh-taksit'); if(tEl) tEl.value='1';
-  document.getElementById('kkh-preview').style.display='none';
-
+  const prevEl=document.getElementById('kkh-preview'); if(prevEl) prevEl.style.display='none';
   kkhRehesapla();
   save();
   renderKkharcama();
-  // Takvimi de güncelle
   renderCalendar();
-  renderTakvim();
 }
 
 function kkhCancelEdit(){
@@ -4917,9 +5030,9 @@ function renderKkharcama(){
   const kartSelMain=document.getElementById('kkh-kart');
   const kartSelFilter=document.getElementById('kkh-filter-kart');
   if(kartSelMain){
-    const cur=kartSelMain.value;
-    kartSelMain.innerHTML='<option value="">— Kart seç —</option>'+kkler.map(k=>`<option value="${k.id}">${k.ad}</option>`).join('');
-    if(cur) kartSelMain.value=cur;
+    const cur=kartSelMain.value; // mevcut seçimi sakla
+    kartSelMain.innerHTML='<option value="">— Kart seç —</option>'+kkler.map(k=>`<option value="${String(k.id)}">${k.ad}</option>`).join('');
+    if(cur && kartSelMain.querySelector(`option[value="${cur}"]`)) kartSelMain.value=cur;
   }
   if(kartSelFilter){
     const cur2=kartSelFilter.value;
