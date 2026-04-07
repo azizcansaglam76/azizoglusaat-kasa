@@ -3631,10 +3631,10 @@ function getOdemeOccurrences(o, fromDate, toDate){
           const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
           if(exc){
             if(exc.tip==='skip'){curAy.setMonth(curAy.getMonth()+1);continue;}
-            if(exc.tip==='edit') results.push({...o,...exc.data,tutar:occTutar,_occ:dateStr,_origId:o.id,_exc:true,_ayKey:ayKey});
-            else results.push({...o,tutar:occTutar,_occ:dateStr,_origId:o.id,_ayKey:ayKey});
+            if(exc.tip==='edit') results.push({...o,...exc.data,tutar:occTutar,_occ:ayKey,_occDisplay:dateStr,_origId:o.id,_exc:true,_ayKey:ayKey});
+            else results.push({...o,tutar:occTutar,_occ:ayKey,_occDisplay:dateStr,_origId:o.id,_ayKey:ayKey});
           } else {
-            results.push({...o,tutar:occTutar,_occ:dateStr,_origId:o.id,_ayKey:ayKey});
+            results.push({...o,tutar:occTutar,_occ:ayKey,_occDisplay:dateStr,_origId:o.id,_ayKey:ayKey});
           }
         }
       }
@@ -3655,15 +3655,16 @@ function getOdemeOccurrences(o, fromDate, toDate){
     while(cur<=effectiveTo && safety<120){
       safety++;
       if(cur>=from){
+        const origStr=cur.toISOString().split('T')[0];
         const isGunu=sonrakiIsGunu(cur);
         const dateStr=isGunu.toISOString().split('T')[0];
-        const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
+        const exc=(o.istisnalar||[]).find(e=>e.tarih===origStr||e.tarih===dateStr);
         if(exc){
           if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar);continue;}
-          if(exc.tip==='edit') results.push({...o,...exc.data,_occ:dateStr,_origId:o.id,_exc:true});
-          else results.push({...o,_occ:dateStr,_origId:o.id});
+          if(exc.tip==='edit') results.push({...o,...exc.data,_occ:origStr,_occDisplay:dateStr,_origId:o.id,_exc:true});
+          else results.push({...o,_occ:origStr,_occDisplay:dateStr,_origId:o.id});
         } else {
-          results.push({...o,_occ:dateStr,_origId:o.id});
+          results.push({...o,_occ:origStr,_occDisplay:dateStr,_origId:o.id});
         }
       }
       cur=nextOcc(cur,o.tekrar);
@@ -3674,8 +3675,9 @@ function getOdemeOccurrences(o, fromDate, toDate){
   if(o.tekrar==='none'||!o.tekrar){
     const d=new Date(o.tarih);
     const isGunu=sonrakiIsGunu(d);
+    const origStr=o.tarih;
     const dateStr=isGunu.toISOString().split('T')[0];
-    if(isGunu>=from&&isGunu<=to) results.push({...o,_occ:dateStr,_origId:o.id});
+    if(isGunu>=from&&isGunu<=to) results.push({...o,_occ:origStr,_occDisplay:dateStr,_origId:o.id});
     return results;
   }
 
@@ -3687,15 +3689,16 @@ function getOdemeOccurrences(o, fromDate, toDate){
   while(cur<=effectiveTo2&&safety<120){
     safety++;
     if(cur>=from){
+      const origStr=cur.toISOString().split('T')[0];
       const isGunu=sonrakiIsGunu(cur);
       const dateStr=isGunu.toISOString().split('T')[0];
-      const exc=(o.istisnalar||[]).find(e=>e.tarih===dateStr);
+      const exc=(o.istisnalar||[]).find(e=>e.tarih===origStr||e.tarih===dateStr);
       if(exc){
         if(exc.tip==='skip'){cur=nextOcc(cur,o.tekrar,orijinalGun);continue;}
-        if(exc.tip==='edit') results.push({...o,...exc.data,_occ:dateStr,_origId:o.id,_exc:true});
-        else results.push({...o,_occ:dateStr,_origId:o.id});
+        if(exc.tip==='edit') results.push({...o,...exc.data,_occ:origStr,_occDisplay:dateStr,_origId:o.id,_exc:true});
+        else results.push({...o,_occ:origStr,_occDisplay:dateStr,_origId:o.id});
       } else {
-        results.push({...o,_occ:dateStr,_origId:o.id});
+        results.push({...o,_occ:origStr,_occDisplay:dateStr,_origId:o.id});
       }
     }
     cur=nextOcc(cur,o.tekrar,orijinalGun);
@@ -3743,10 +3746,18 @@ function getUpcomingOdemeler(days=30){
 function getOccurrencesForDate(dateStr){
   const all=[];
   S.odemeler.forEach(o=>{
-    const occs=getOdemeOccurrences(o,dateStr,dateStr);
+    // Geniş aralık al, sonra _occDisplay ile filtrele
+    const d=new Date(dateStr);
+    const from=new Date(d); from.setDate(d.getDate()-7);
+    const to=new Date(d); to.setDate(d.getDate()+1);
+    const fromStr=from.toISOString().split('T')[0];
+    const toStr=to.toISOString().split('T')[0];
+    const occs=getOdemeOccurrences(o,fromStr,toStr);
     occs.forEach(occ=>{
+      const displayDate=occ._occDisplay||occ._occ;
+      if(displayDate!==dateStr) return; // sadece bu güne ait olanlar
       const paidKey=`${occ._origId}_${occ._occ}`;
-      all.push({...occ,paid:isPaid(paidKey),paidKey});
+      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey),paidKey});
     });
   });
   return all;
@@ -3756,12 +3767,18 @@ function getOccurrencesForMonth(year,month){
   const from=`${year}-${String(month+1).padStart(2,'0')}-01`;
   const lastDay=new Date(year,month+1,0).getDate();
   const to=`${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  // Önceki aydan taşan ödemeler için 7 gün önce başla
+  const fromExt=new Date(year,month,1); fromExt.setDate(fromExt.getDate()-7);
+  const fromExtStr=fromExt.toISOString().split('T')[0];
   const all=[];
   S.odemeler.forEach(o=>{
-    const occs=getOdemeOccurrences(o,from,to);
+    const occs=getOdemeOccurrences(o,fromExtStr,to);
     occs.forEach(occ=>{
+      const displayDate=occ._occDisplay||occ._occ;
+      // Sadece bu aya ait olanlar
+      if(displayDate<from||displayDate>to) return;
       const paidKey=`${occ._origId}_${occ._occ}`;
-      all.push({...occ,paid:isPaid(paidKey),paidKey});
+      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey),paidKey});
     });
   });
   return all;
