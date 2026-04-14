@@ -1838,7 +1838,7 @@ let S = {
 };
 let S_bankaHareketler = []; // [{id,tip,bankaAd,tutar,aciklama,tarih,karsiBanka,otomatik}]
 let S_kasaHareketler  = []; // [{id,tip,tutar,aciklama,tarih}] — manuel nakit giriş/çıkış
-let ay = 3, yr = 2026, uid = 5000;
+let ay = new Date().getMonth()+1, yr = new Date().getFullYear(), uid = 5000;
 
 // ════ SUPABASE CONFIG ════
 const SUPA_URL = 'https://imnpolcvaasqzcpwmtvw.supabase.co';
@@ -2126,6 +2126,7 @@ function updateMonthLabel(){ document.getElementById('month-label').textContent=
 
 // ════ RENDER ALL ════
 function renderAll(){
+  updateMonthLabel();
   updateChip();
   renderDashboard();
   renderGirisList();
@@ -3787,8 +3788,11 @@ function getOccurrencesForDate(dateStr){
     occs.forEach(occ=>{
       const displayDate=occ._occDisplay||occ._occ;
       if(displayDate!==dateStr) return; // sadece bu güne ait olanlar
-      const paidKey=`${occ._origId}_${occ._occ}`;
-      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey),paidKey});
+      // paidKey: hem eski (orijinal tarih) hem yeni (display tarih) formatı destekle
+      const paidKeyNew=`${occ._origId}_${displayDate}`;
+      const paidKeyOld=`${occ._origId}_${occ._occ}`;
+      const paidKey=isPaid(paidKeyNew)?paidKeyNew:(isPaid(paidKeyOld)?paidKeyOld:paidKeyNew);
+      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey)||isPaid(paidKeyOld),paidKey});
     });
   });
   return all;
@@ -3808,8 +3812,10 @@ function getOccurrencesForMonth(year,month){
       const displayDate=occ._occDisplay||occ._occ;
       // Sadece bu aya ait olanlar
       if(displayDate<from||displayDate>to) return;
-      const paidKey=`${occ._origId}_${occ._occ}`;
-      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey),paidKey});
+      const paidKeyNew=`${occ._origId}_${displayDate}`;
+      const paidKeyOld=`${occ._origId}_${occ._occ}`;
+      const paidKey=isPaid(paidKeyNew)?paidKeyNew:(isPaid(paidKeyOld)?paidKeyOld:paidKeyNew);
+      all.push({...occ,_occ:displayDate,paid:isPaid(paidKey)||isPaid(paidKeyOld),paidKey});
     });
   });
   return all;
