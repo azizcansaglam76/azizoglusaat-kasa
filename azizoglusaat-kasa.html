@@ -1323,6 +1323,46 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
+<!-- ══ PAZAR İADE MODAL ══ -->
+<div id="pazar-iade-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1002;align-items:center;justify-content:center">
+  <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:24px;width:min(440px,95vw)">
+    <div style="font-size:15px;font-weight:600;margin-bottom:4px">↩ İade Kaydı</div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:14px" id="pazar-iade-sub">Sipariş bilgileri</div>
+
+    <div style="background:var(--s2);border-radius:var(--r3);padding:10px 14px;margin-bottom:14px;font-size:12px" id="pazar-iade-ozet"></div>
+
+    <div class="fg fg2" style="margin-bottom:10px">
+      <div class="fl">
+        <label>İade Tarihi</label>
+        <input type="date" id="pazar-iade-tarih">
+      </div>
+      <div class="fl">
+        <label>Kargo Ücreti (₺) <span style="color:var(--t3);font-size:10px">platform kesintisi</span></label>
+        <input type="number" id="pazar-iade-kargo" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="fl" style="margin-bottom:6px">
+      <label>İade Kargo Adedi <span style="color:var(--t3);font-size:10px">genellikle 2 (gidiş+dönüş)</span></label>
+      <select id="pazar-iade-kargo-adet">
+        <option value="1">1 kargo (sadece dönüş)</option>
+        <option value="2" selected>2 kargo (gidiş + dönüş)</option>
+        <option value="3">3 kargo</option>
+      </select>
+    </div>
+    <div class="fl" style="margin-bottom:6px">
+      <label>Not <span style="color:var(--t3);font-size:10px">opsiyonel</span></label>
+      <input type="text" id="pazar-iade-not" placeholder="Müşteri değişiklik istedi...">
+    </div>
+
+    <div id="pazar-iade-hesap" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:var(--r3);padding:10px 14px;margin-bottom:14px;font-size:12px"></div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-red" style="flex:1" onclick="savePazarIade()">↩ İadeyi Kaydet</button>
+      <button class="btn btn-ghost" onclick="closePazarIade()">İptal</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ KASA HAREKET MODAL ══ -->
 <div id="kasa-hareket-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1002;align-items:center;justify-content:center">
   <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:24px;width:min(420px,95vw)">
@@ -2063,7 +2103,7 @@ const fmtN = n => Math.round(n).toLocaleString('tr-TR');
 const ayGiris = () => S.giris.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
 const ayPazar = () => S.pazar.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
 const ayGider = () => S.gider.filter(r=>r.ay===ay&&(r.yr||2026)===yr);
-const pKar = r => r.tutar - r.tutar*(r.kom/100) - r.tutar*(r.kdv/100) - r.kargo - r.maliyet;
+const pKar = r => r.iade ? 0 : r.tutar - r.tutar*(r.kom/100) - r.tutar*(r.kdv/100) - r.kargo - r.maliyet;
 
 function getBankaKomOran(odeme, taksit){
   if(odeme==='Nakit') return 0;
@@ -2855,7 +2895,9 @@ function renderPazarList(){
       <td class="r muted">${fmt(r.kargo)}</td><td class="r neu">${fmt(r.maliyet)}</td>
       <td class="r ${n>=0?'pos':'neg'}">${fmt(n)}</td>
       <td style="display:flex;gap:4px">
+        ${r.iade?`<span style="font-size:10px;padding:2px 6px;background:rgba(248,113,113,.15);color:var(--red);border-radius:10px;align-self:center">↩ İade</span>`:''}
         <button class="btn btn-sm btn-ghost" onclick="editP(${r.id})" title="Düzenle">✏</button>
+        <button class="btn btn-sm" style="background:rgba(248,113,113,.15);color:var(--red);font-size:10px;padding:2px 7px" onclick="openPazarIade(${r.id})" title="İade">↩</button>
         <button class="btn btn-red btn-sm" onclick="delP(${r.id})" title="Sil">×</button>
       </td></tr>`;
   }).join(''):`<tr><td colspan="11" class="empty"><p>Kayıt yok</p></td></tr>`;
@@ -2869,6 +2911,104 @@ function delP(id){
   if(editingPazarId===id) pCancelEdit();
   S.pazar=S.pazar.filter(r=>r.id!==id);
   save(); renderAll();
+}
+
+// ════ PAZAR İADE ════
+let _iadeId = null;
+
+function openPazarIade(id){
+  const r = S.pazar.find(x=>String(x.id)===String(id));
+  if(!r) return;
+  _iadeId = id;
+
+  document.getElementById('pazar-iade-sub').textContent =
+    `${r.platform} · ${r.marka} · ${r.tarih}`;
+
+  // Sipariş özeti
+  const kom = r.tutar*(r.kom/100);
+  const kdv = r.tutar*(r.kdv/100);
+  document.getElementById('pazar-iade-ozet').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+      <div>Satış tutarı: <strong>₺${fmt(r.tutar)}</strong></div>
+      <div>Komisyon: <strong>₺${fmt(kom)}</strong> (%${r.kom})</div>
+      <div>Platform kargosu: <strong>₺${fmt(r.kargo)}</strong></div>
+      <div>Maliyet: <strong>₺${fmt(r.maliyet)}</strong></div>
+    </div>
+    <div style="margin-top:6px;color:var(--t3);font-size:11px">
+      💡 İadede komisyon iade edilir, kargo iade edilmez. Sistem gidiş+dönüş kargo gideri ekler.
+    </div>`;
+
+  // Varsayılan kargo tutarını doldur
+  safeSet('pazar-iade-kargo', r.kargo);
+  safeSet('pazar-iade-tarih', new Date().toISOString().split('T')[0]);
+  safeSet('pazar-iade-not', '');
+
+  // Canlı hesap
+  iadeHesapGoster(r);
+
+  document.getElementById('pazar-iade-overlay').style.display='flex';
+  // Kargo değişince hesabı güncelle
+  document.getElementById('pazar-iade-kargo').oninput = ()=>iadeHesapGoster(r);
+  document.getElementById('pazar-iade-kargo-adet').onchange = ()=>iadeHesapGoster(r);
+}
+
+function iadeHesapGoster(r){
+  const kargo = +document.getElementById('pazar-iade-kargo')?.value||0;
+  const adet  = +document.getElementById('pazar-iade-kargo-adet')?.value||2;
+  const toplamKargo = kargo * adet;
+  const el = document.getElementById('pazar-iade-hesap');
+  if(!el) return;
+  el.innerHTML = `
+    <div style="font-weight:600;color:var(--red);margin-bottom:6px">📊 İade Zarar Hesabı</div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+      <span>Kargo kesintisi (${adet}×₺${fmt(kargo)})</span>
+      <span style="color:var(--red);font-weight:600">−₺${fmt(toplamKargo)}</span>
+    </div>
+    <div style="border-top:1px solid rgba(248,113,113,.2);padding-top:6px;margin-top:4px;display:flex;justify-content:space-between">
+      <span style="font-weight:600">Net Zarar</span>
+      <span style="color:var(--red);font-weight:700;font-size:14px">−₺${fmt(toplamKargo)}</span>
+    </div>
+    <div style="font-size:10px;color:var(--t3);margin-top:4px">Giderler sekmesine "İade Kargo" olarak eklenecek</div>`;
+}
+
+function savePazarIade(){
+  const r = S.pazar.find(x=>String(x.id)===String(_iadeId));
+  if(!r) return;
+
+  const tarih  = document.getElementById('pazar-iade-tarih')?.value||new Date().toISOString().split('T')[0];
+  const kargo  = +document.getElementById('pazar-iade-kargo')?.value||0;
+  const adet   = +document.getElementById('pazar-iade-kargo-adet')?.value||2;
+  const not    = document.getElementById('pazar-iade-not')?.value||'';
+  const toplamKargo = kargo * adet;
+
+  // Siparişi iade olarak işaretle
+  const idx = S.pazar.findIndex(x=>String(x.id)===String(_iadeId));
+  if(idx!==-1) S.pazar[idx] = {...S.pazar[idx], iade:true, iadeTarih:tarih};
+
+  // Kargo giderini ekle
+  if(toplamKargo>0){
+    const d = new Date(tarih+'T12:00:00');
+    S.gider.push({
+      id: uid++,
+      ay: d.getMonth()+1,
+      yr: d.getFullYear(),
+      tarih,
+      desc: `İade Kargo — ${r.platform} ${r.marka}${not?` (${not})`:''}`,
+      kat: 'Kargo',
+      tutar: toplamKargo,
+      odemeYontemi: 'Nakit',
+      not: `${adet}×₺${fmt(kargo)} · Sipariş: ${r.sipNo||r.tarih}`,
+    });
+  }
+
+  closePazarIade();
+  save();
+  renderAll();
+}
+
+function closePazarIade(){
+  document.getElementById('pazar-iade-overlay').style.display='none';
+  _iadeId = null;
 }
 
 // ════ GİDERLER ════
