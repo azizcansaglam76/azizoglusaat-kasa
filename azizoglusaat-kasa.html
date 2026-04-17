@@ -418,6 +418,92 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .taksit-badge{display:inline-block;background:var(--s3);color:var(--t2);border:1px solid var(--b1);border-radius:4px;padding:1px 6px;font-size:10px;font-family:var(--mono);margin-bottom:2px}
 .kom-highlight{color:var(--amber);font-family:var(--mono);font-size:11px;font-weight:500}
 .pesin-row td{background:rgba(74,222,128,.04)!important}
+
+/* ── LIGHT THEME ── */
+body.light-theme{
+  --bg:#f5f5f5;--s1:#ffffff;--s2:#f0f0f2;--s3:#e4e4e8;
+  --b1:#d4d4d8;--b2:#a1a1aa;--b3:#71717a;
+  --t1:#18181b;--t2:#52525b;--t3:#a1a1aa;
+  --shadow:0 1px 3px rgba(0,0,0,.1);
+}
+body.light-theme .topbar{background:#fff;border-bottom:1px solid #e4e4e7}
+body.light-theme .sidebar{background:#fff;border-right:1px solid #e4e4e7}
+body.light-theme .content{background:#f5f5f5}
+body.light-theme .nav-btn.active{background:#e4e4e8;color:#18181b}
+body.light-theme .mc,body.light-theme .card,body.light-theme .kpi,body.light-theme .kasa-mini,body.light-theme .stock-item{background:#fff;border-color:#e4e4e7}
+body.light-theme .cal-cell{border-color:#e4e4e7}
+body.light-theme .cal-dow{background:#f9fafb;border-color:#e4e4e7}
+body.light-theme input,body.light-theme select,body.light-theme textarea{background:#f9fafb;border-color:#d4d4d8;color:#18181b}
+body.light-theme .btn{background:#f0f0f2;border-color:#d4d4d8;color:#18181b}
+body.light-theme .btn:hover{background:#e4e4e8}
+body.light-theme .btn-green{background:var(--green);color:#000;border-color:var(--green)}
+body.light-theme .sr{background:#f0f0f2}
+body.light-theme .kasa-bakiye{background:#f0f0f2;border-color:#d4d4d8}
+body.light-theme .preview-bar{background:#f0f0f2;border-color:#d4d4d8}
+body.light-theme .bildirim-row{background:rgba(255,255,255,.8)}
+body.light-theme td{border-bottom:1px solid rgba(0,0,0,.06)}
+body.light-theme tbody tr:hover td{background:rgba(0,0,0,.02)}
+body.light-theme .nav-btn:hover{background:#f0f0f2}
+body.light-theme .month-pill{background:#f0f0f2;border-color:#d4d4d8}
+body.light-theme .chip{background:#f0f0f2;border-color:#d4d4d8}
+body.light-theme .kasa-day-header{background:#f9fafb;border-color:#e4e4e7}
+body.light-theme .logo-mark{box-shadow:0 1px 4px rgba(0,0,0,.15)}
+body.light-theme ::-webkit-scrollbar-thumb{background:#c4c4c8}
+body.light-theme #login-screen{background:#e8e8ec!important}
+body.light-theme #login-screen>div{background:#fff!important;border-color:#d4d4d8!important}
+body.light-theme #login-screen input{background:#f0f0f2!important;border-color:#d4d4d8!important;color:#18181b!important}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{background:none;border:1px solid var(--b1);border-radius:20px;color:var(--t2);cursor:pointer;padding:5px 10px;font-size:13px;transition:all .15s;display:flex;align-items:center;gap:5px}
+.theme-toggle:hover{background:var(--s2);color:var(--t1)}
+
+/* ── NOTIFICATION CENTER ── */
+.notif-bell-wrap{position:relative}
+.notif-bell{position:relative;background:none;border:none;color:var(--t2);cursor:pointer;padding:6px;border-radius:8px;display:flex;align-items:center;transition:all .15s}
+.notif-bell:hover{background:var(--s2);color:var(--t1)}
+.notif-bell svg{width:18px;height:18px}
+.notif-count{position:absolute;top:1px;right:1px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);line-height:1;padding:0 3px}
+.notif-dropdown{position:absolute;top:calc(100% + 6px);right:0;width:380px;max-height:460px;overflow-y:auto;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:200;display:none;animation:fi .15s ease}
+.notif-dropdown.open{display:block}
+.notif-dropdown-header{padding:14px 16px;border-bottom:1px solid var(--b1);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.notif-item{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .1s}
+.notif-item:hover{background:var(--s2)}
+.notif-item-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.notif-item-body{flex:1;min-width:0}
+.notif-item-title{font-size:12px;font-weight:500;margin-bottom:1px}
+.notif-item-meta{font-size:11px;color:var(--t3)}
+.notif-item-amount{font-family:var(--mono);font-size:13px;font-weight:600;flex-shrink:0}
+.notif-empty{padding:30px 16px;text-align:center;color:var(--t3);font-size:13px}
+
+/* ── QUICK ACTIONS ── */
+.qa-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1003;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.qa-overlay.open{display:flex}
+.qa-modal{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:24px;width:min(480px,95vw)}
+.qa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.qa-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);cursor:pointer;transition:all .15s;text-align:center}
+.qa-card:hover{border-color:var(--green2);background:rgba(74,222,128,.06);transform:translateY(-1px)}
+.qa-card-icon{font-size:24px}
+.qa-card-label{font-size:12px;font-weight:500;color:var(--t2)}
+
+/* ── SPARKLINE ── */
+.sparkline-wrap{display:inline-flex;vertical-align:middle;margin-left:6px}
+.sparkline-wrap svg{display:block}
+
+/* ── CASH FLOW FORECAST ── */
+.forecast-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.forecast-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.forecast-day{font-size:11px;color:var(--t2);width:70px;flex-shrink:0;text-align:right;font-family:var(--mono)}
+.forecast-amount{font-family:var(--mono);font-size:12px;font-weight:600;width:85px;flex-shrink:0;text-align:right}
+.forecast-track{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.forecast-fill{height:100%;border-radius:3px;transition:width .4s}
+.forecast-warning{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:var(--r3);margin-top:8px;font-size:12px}
+
+@media(max-width:768px){
+  .notif-dropdown{width:calc(100vw - 20px);right:-100px}
+  .qa-grid{grid-template-columns:1fr 1fr}
+  .qa-modal{width:95vw;padding:18px}
+  .theme-toggle span{display:none}
+}
 </style>
 </head>
 <body>
@@ -444,6 +530,55 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
+<!-- ══ QUICK ACTIONS MODAL ══ -->
+<div class="qa-overlay" id="qa-overlay" onclick="if(event.target===this)closeQuickActions()">
+  <div class="qa-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:17px;font-weight:700">Hızlı İşlem</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeQuickActions()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:6px">Bir kısayol seçin — ilgili sayfaya yönlendirileceksiniz</div>
+    <div class="qa-grid">
+      <div class="qa-card" onclick="qaGo('giris')">
+        <div class="qa-card-icon">🛒</div>
+        <div class="qa-card-label">Satış Ekle</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('pazaryeri')">
+        <div class="qa-card-icon">📦</div>
+        <div class="qa-card-label">Pazaryeri Siparişi</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('giderler')">
+        <div class="qa-card-icon">💸</div>
+        <div class="qa-card-label">Gider Ekle</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('takvim')">
+        <div class="qa-card-icon">📅</div>
+        <div class="qa-card-label">Ödeme Ekle</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('telefon-stok')">
+        <div class="qa-card-icon">📱</div>
+        <div class="qa-card-label">Stoka Telefon</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('anakasa')">
+        <div class="qa-card-icon">💵</div>
+        <div class="qa-card-label">Nakit Hareket</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('kkharcama')">
+        <div class="qa-card-icon">💳</div>
+        <div class="qa-card-label">KK Harcama</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('bankahesap')">
+        <div class="qa-card-icon">🏦</div>
+        <div class="qa-card-label">Banka Hareketi</div>
+      </div>
+      <div class="qa-card" onclick="qaGo('rapor')">
+        <div class="qa-card-icon">📊</div>
+        <div class="qa-card-label">Rapor Oluştur</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="main-app" style="display:none">
 
 <!-- TOPBAR -->
@@ -467,6 +602,30 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
     </div>
   </div>
   <div class="topbar-right">
+    <!-- Quick Action Button -->
+    <button class="btn btn-green btn-sm" onclick="openQuickActions()" style="font-weight:700;gap:4px">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Hızlı İşlem
+    </button>
+    <!-- Notification Bell -->
+    <div class="notif-bell-wrap">
+      <button class="notif-bell" onclick="toggleNotifDropdown(event)" id="notif-bell-btn">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M10 2a5 5 0 00-5 5v3l-1.7 2.55a.5.5 0 00.42.78h12.56a.5.5 0 00.42-.78L15 10V7a5 5 0 00-5-5z" stroke="currentColor" stroke-width="1.3"/><path d="M8 15a2 2 0 004 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span class="notif-count" id="notif-count" style="display:none">0</span>
+      </button>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-dropdown-header">
+          <span>Bildirimler</span>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNotifDropdown(event)" style="font-size:11px">✕</button>
+        </div>
+        <div id="notif-list"></div>
+      </div>
+    </div>
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn">
+      <span id="theme-icon">🌙</span>
+      <span id="theme-label">Koyu</span>
+    </button>
     <span id="sync-indicator" style="font-size:11px;color:var(--t3)">☁ Bağlanıyor...</span>
     <div class="chip"><div class="chip-dot"></div><span id="chip-text">0 kayıt</span></div>
     <button class="btn btn-sm btn-outline" onclick="exportCSV()">↓ CSV</button>
@@ -790,6 +949,23 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
     </div>
     <div id="dash-kasa-widget"></div>
   </div>
+
+  <!-- Banka Bakiye widget -->
+  <div id="dash-banka-widget"></div>
+
+  <!-- Nakit Akış Tahmini (Cash Flow Forecast) -->
+  <div class="forecast-card" style="border-color:var(--cyan);background:linear-gradient(135deg,rgba(34,211,238,.04),transparent)">
+    <div class="card-header" style="margin-bottom:14px">
+      <div class="card-title" style="color:var(--cyan)">🔮 Nakit Akış Tahmini — Önümüzdeki 30 Gün</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm" id="fcst-15" onclick="setForecastDays(15,this)">15 Gün</button>
+        <button class="btn btn-sm" id="fcst-30" onclick="setForecastDays(30,this)" style="border-color:var(--cyan);color:var(--cyan)">30 Gün</button>
+        <button class="btn btn-sm" id="fcst-60" onclick="setForecastDays(60,this)">60 Gün</button>
+      </div>
+    </div>
+    <div id="dash-forecast"></div>
+  </div>
+
   <div class="g2">
     <div class="card"><div class="card-header"><div class="card-title">Platform Net Kâr</div></div><div class="bl" id="d-platform"></div></div>
     <div class="card"><div class="card-header"><div class="card-title">Kâr Özeti</div></div><div id="d-karoz"></div></div>
@@ -1407,6 +1583,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 
   <!-- Banka özet kartları -->
+  <div id="bh-toplam" style="margin-bottom:12px"></div>
   <div id="bh-ozet" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px"></div>
 
   <!-- Sekme seçici -->
@@ -2183,8 +2360,11 @@ function renderAll(){
   renderOdemeList();
   renderAnaKasa();
   renderDashKasaWidget();
+  renderDashBankaWidget();
   renderDashOdemeBildirim();
   renderKkharcama();
+  renderForecast();
+  updateNotifCount();
 }
 
 function updateChip(){
@@ -2215,22 +2395,26 @@ function renderDashboard(){
   const net=mKar+netP-gider;
   document.getElementById('dash-p').textContent=`${MONTHS[ay]} ${yr} — ${g.length+p.length} işlem`;
 
+  // Sparkline verileri — son 14 günlük trend
+  const spkData=getDailyDataForSparkline(14);
+  const spkNet=spkData.ciro.map((c,i)=>c-spkData.gider[i]); // basit net tahmin
+
   document.getElementById('dash-metrics').innerHTML=`
     <div class="mc"><div class="mc-accent" style="background:var(--blue)"></div>
       <div class="mc-icon" style="background:var(--blue3)"><svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="var(--blue)" stroke-width="1.2"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="var(--blue)" stroke-width="1.2"/></svg></div>
-      <div class="mc-label">Toplam Ciro</div><div class="mc-value" style="color:var(--blue)">${fmt(mCiro+pCiro)}</div>
+      <div class="mc-label">Toplam Ciro ${sparklineSVG(spkData.ciro,'var(--blue)',60,20)}</div><div class="mc-value" style="color:var(--blue)">${fmt(mCiro+pCiro)}</div>
       <div class="mc-sub">Mağaza ${fmt(mCiro)} · Pazar ${fmt(pCiro)}</div></div>
     <div class="mc"><div class="mc-accent" style="background:var(--green)"></div>
       <div class="mc-icon" style="background:var(--green3)"><svg viewBox="0 0 16 16" fill="none"><path d="M3 10l3-4 3 2 4-5" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <div class="mc-label">Brüt Kâr</div><div class="mc-value" style="color:var(--green)">${fmt(mKar+netP)}</div>
+      <div class="mc-label">Brüt Kâr ${sparklineSVG(spkData.kar,'var(--green)',60,20)}</div><div class="mc-value" style="color:var(--green)">${fmt(mKar+netP)}</div>
       <div class="mc-sub">Gider öncesi</div></div>
     <div class="mc"><div class="mc-accent" style="background:var(--red)"></div>
       <div class="mc-icon" style="background:var(--red3)"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" transform="rotate(45 8 8)"/></svg></div>
-      <div class="mc-label">Toplam Gider</div><div class="mc-value" style="color:var(--red)">${fmt(gider)}</div>
+      <div class="mc-label">Toplam Gider ${sparklineSVG(spkData.gider,'var(--red)',60,20)}</div><div class="mc-value" style="color:var(--red)">${fmt(gider)}</div>
       <div class="mc-sub">${d.length} kalem</div></div>
     <div class="mc"><div class="mc-accent" style="background:${net>=0?'var(--green)':'var(--red)'}"></div>
       <div class="mc-icon" style="background:${net>=0?'var(--green3)':'var(--red3)'}"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="${net>=0?'var(--green)':'var(--red)'}" stroke-width="1.2"/><path d="M6 8l2 2 3-3" stroke="${net>=0?'var(--green)':'var(--red)'}" stroke-width="1.3" stroke-linecap="round"/></svg></div>
-      <div class="mc-label">Net Kâr</div><div class="mc-value" style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</div>
+      <div class="mc-label">Net Kâr ${sparklineSVG(spkNet,net>=0?'var(--green)':'var(--red)',60,20)}</div><div class="mc-value" style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</div>
       <div class="mc-sub">${net>=0?'✓ Kârlı ay':'✗ Zararlı ay'}</div></div>`;
 
   // Platform bars
@@ -3624,6 +3808,7 @@ function saveSettings(){
   save();
   renderAnaKasa();
   renderDashKasaWidget();
+  renderDashBankaWidget();
   alert('Ayarlar kaydedildi.');
 }
 
@@ -3996,7 +4181,9 @@ function confirmOdeme(){
   if(!_pendingPaidKey) return;
   const hesap=document.getElementById('om-hesap')?.value||'Nakit';
   if(!S.odemePaid) S.odemePaid={};
-  S.odemePaid[_pendingPaidKey]={hesap, tarih:new Date().toISOString().split('T')[0]};
+  // Gerçek ödeme tutarını da kaydet — böylece banka hesabında doğru tutar düşer
+  const gercekTutar = _pendingOdemeInfo?.tutar || 0;
+  S.odemePaid[_pendingPaidKey]={hesap, tarih:new Date().toISOString().split('T')[0], tutar: gercekTutar};
   _pendingPaidKey=null; _pendingOdemeInfo=null;
   closeOdemeModal();
   save(); renderAll();
@@ -4765,7 +4952,12 @@ function kasaGunlukHesapla(dateStr){
     const gercekHesap=getPaidHesap(o.paidKey)||o.odemeHesap||'Nakit';
     return gercekHesap==='Nakit';
   });
-  const nakitTakToplam=nakitTakOdemeler.reduce((s,o)=>s+o.tutar,0);
+  const nakitTakToplam=nakitTakOdemeler.reduce((s,o)=>{
+    // Kaydedilmiş gerçek tutarı kullan
+    const paidData=(S.odemePaid||{})[o.paidKey];
+    const gercekTutar=(paidData&&typeof paidData==='object'&&paidData.tutar)?paidData.tutar:o.tutar;
+    return s+gercekTutar;
+  },0);
 
   // Bankaya nakit yatırma (kasadan banka hesabına)
   const nakitYatirmalar=S_bankaHareketler.filter(h=>h.tip==='nakit_yatirma'&&h.tarih===dateStr);
@@ -5065,6 +5257,61 @@ function renderDashKasaWidget(){
       </div>
     </div>`
 ;}
+
+function renderDashBankaWidget(){
+  const el = document.getElementById('dash-banka-widget');
+  if(!el) return;
+  const bankalar = S.settings.bankaHesaplari||[];
+  if(!bankalar.length){ el.innerHTML=''; return; }
+
+  const bakiyeler = bankalar.map(b=>({...b, bakiye: bankaBakiyeHesapla(b.ad)}));
+  const net     = bakiyeler.reduce((s,b)=>s+b.bakiye, 0);
+  const pozitif = bakiyeler.filter(b=>b.bakiye>0).reduce((s,b)=>s+b.bakiye, 0);
+  const negatif = bakiyeler.filter(b=>b.bakiye<0).reduce((s,b)=>s+b.bakiye, 0);
+
+  el.innerHTML=`
+  <div class="card" style="border-color:var(--blue2);background:linear-gradient(135deg,rgba(96,165,250,.04),transparent);cursor:pointer" onclick="nav('bankahesap',document.querySelector('.nav-btn[onclick*=bankahesap]'))">
+    <div class="card-header">
+      <div class="card-title" style="color:#60a5fa">🏦 Banka Hesapları — Toplam Bakiye</div>
+      <button class="btn btn-sm btn-ghost" style="font-size:11px" onclick="event.stopPropagation();nav('bankahesap',document.querySelector('.nav-btn[onclick*=bankahesap]'))">Detay →</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <!-- Toplam büyük rakam -->
+      <div>
+        <div style="font-size:32px;font-weight:800;color:${net>=0?'#60a5fa':'var(--red)'}">
+          ${net<0?'−':''}₺${fmt(Math.abs(net))}
+        </div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">${bankalar.length} hesap · tıkla detaya git</div>
+      </div>
+      <!-- Banka barlari -->
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          ${bakiyeler.map(b=>{
+            const yuzde = pozitif>0 ? Math.max(4, Math.abs(b.bakiye)/pozitif*100) : 4;
+            return `<div style="display:flex;align-items:center;gap:8px">
+              <div style="font-size:11px;color:var(--t2);min-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.ad}</div>
+              <div style="flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${Math.min(yuzde,100)}%;background:${b.bakiye>=0?b.renk:'var(--red)'};border-radius:3px"></div>
+              </div>
+              <div style="font-size:11px;font-family:var(--mono);color:${b.bakiye>=0?b.renk:'var(--red)'};min-width:70px;text-align:right">${b.bakiye<0?'−':''}₺${fmt(Math.abs(b.bakiye))}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <!-- Ozet -->
+      ${negatif<0?`<div style="display:flex;flex-direction:column;gap:8px;padding-left:16px;border-left:1px solid var(--b1)">
+        <div>
+          <div style="font-size:10px;color:var(--t3)">Pozitif</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green)">+₺${fmt(pozitif)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--t3)">Eksi</div>
+          <div style="font-size:16px;font-weight:700;color:var(--red)">−₺${fmt(Math.abs(negatif))}</div>
+        </div>
+      </div>`:''}
+    </div>
+  </div>`;
+}
 
 // ════ KK HARCAMALARI ════
 let editingKkhId = null;
@@ -6049,9 +6296,14 @@ function bankaBakiyeHesapla(bankaAd){
     if(hesap===bankaAd){
       const paidTarih = typeof paidData==='object' ? paidData.tarih : '';
       if(paidTarih>=acilisTarih){
-        const oid = +pk.split('_')[0];
-        const od = S.odemeler.find(o=>o.id===oid);
-        if(od) bakiye -= od.tutar;
+        // Önce kaydedilmiş gerçek tutarı kullan, yoksa ödeme tanımındaki tutarı kullan
+        let tutar = (typeof paidData==='object' && paidData.tutar) ? paidData.tutar : 0;
+        if(!tutar){
+          const oid = +pk.split('_')[0];
+          const od = S.odemeler.find(o=>o.id===oid);
+          if(od) tutar = od.tutar;
+        }
+        bakiye -= tutar;
       }
     }
   });
@@ -6117,7 +6369,10 @@ function bankaHareketlerGetir(bankaAd){
       const paidTarih = typeof paidData==='object' ? paidData.tarih : '';
       const oid = +pk.split('_')[0];
       const od = S.odemeler.find(o=>o.id===oid);
-      if(od && paidTarih>=acilisTarih) hareketler.push({id:`od_${pk}`,bankaAd,tip:'otomatik',yon:-1,tutar:od.tutar,tarih:paidTarih,aciklama:`Ödeme: ${od.ad}`,icon:'📅',renk:'var(--amber)',label:'Takvim Ödemesi',kaynak:'otomatik'});
+      // Önce kaydedilmiş gerçek tutarı kullan, yoksa ödeme tanımındaki tutarı kullan
+      let tutar = (typeof paidData==='object' && paidData.tutar) ? paidData.tutar : 0;
+      if(!tutar && od) tutar = od.tutar;
+      if(od && paidTarih>=acilisTarih) hareketler.push({id:`od_${pk}`,bankaAd,tip:'otomatik',yon:-1,tutar:tutar,tarih:paidTarih,aciklama:`Ödeme: ${od.ad}`,icon:'📅',renk:'var(--amber)',label:'Takvim Ödemesi',kaynak:'otomatik'});
     }
   });
 
@@ -6126,6 +6381,17 @@ function bankaHareketlerGetir(bankaAd){
 
 function renderBankaHesap(){
   const bankalar = S.settings.bankaHesaplari||[];
+
+  // Toplam bakiye
+  const toplamEl = document.getElementById('bh-toplam');
+  if(toplamEl && bankalar.length){
+    const net = bankalar.reduce((s,b)=>s+bankaBakiyeHesapla(b.ad), 0);
+    toplamEl.innerHTML=`<div style="padding:12px 18px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);display:flex;align-items:center;gap:16px">
+      <span style="font-size:12px;color:var(--t3)">Toplam Banka Bakiyesi</span>
+      <span style="font-size:22px;font-weight:800;font-family:var(--mono);color:${net>=0?'var(--green)':'var(--red)'}">${net<0?'−':''}₺${fmt(Math.abs(net))}</span>
+      <span style="font-size:11px;color:var(--t3)">${bankalar.length} hesap</span>
+    </div>`;
+  }
 
   // Özet kartları
   const ozetEl=document.getElementById('bh-ozet');
@@ -6715,6 +6981,405 @@ function renderGrafikler(){
     </div>`;
     isiEl.innerHTML=html;
   }
+}
+
+// ════ TEMA DEĞİŞİMİ ════
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light-theme');
+  try{ localStorage.setItem('kasapro_theme', isLight?'light':'dark'); }catch(e){}
+  updateThemeButton();
+}
+function updateThemeButton(){
+  const isLight = document.body.classList.contains('light-theme');
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if(icon) icon.textContent = isLight ? '☀️' : '🌙';
+  if(label) label.textContent = isLight ? 'Açık' : 'Koyu';
+}
+// Sayfa yüklenince tema tercihini yükle
+(function(){
+  try{
+    const t=localStorage.getItem('kasapro_theme');
+    if(t==='light') document.body.classList.add('light-theme');
+  }catch(e){}
+  updateThemeButton();
+})();
+
+// ════ BİLDİRİM MERKEZİ ════
+function toggleNotifDropdown(e){
+  e&&e.stopPropagation();
+  const dd=document.getElementById('notif-dropdown');
+  if(!dd) return;
+  dd.classList.toggle('open');
+  if(dd.classList.contains('open')) renderNotifications();
+}
+// Dışarı tıklayınca kapat
+document.addEventListener('click', function(e){
+  const wrap=document.querySelector('.notif-bell-wrap');
+  const dd=document.getElementById('notif-dropdown');
+  if(dd&&wrap&&!wrap.contains(e.target)) dd.classList.remove('open');
+});
+
+function renderNotifications(){
+  const listEl=document.getElementById('notif-list');
+  const countEl=document.getElementById('notif-count');
+  if(!listEl) return;
+
+  const todayStr=new Date().toISOString().split('T')[0];
+  const items=[];
+
+  // 1) Vadesi geçmiş/bugün/yaklaşan ödemeler
+  const past30=new Date(); past30.setDate(past30.getDate()-30);
+  const future14=new Date(); future14.setDate(future14.getDate()+14);
+  S.odemeler.forEach(o=>{
+    const occs=getOdemeOccurrences(o, past30.toISOString().split('T')[0], future14.toISOString().split('T')[0]);
+    occs.forEach(occ=>{
+      const pk=`${occ._origId}_${occ._occ}`;
+      if(!isPaid(pk)){
+        let urgency=0, label='', cls='';
+        if(occ._occ<todayStr){ urgency=3; label='GECİKMİŞ'; cls='color:#f87171'; }
+        else if(occ._occ===todayStr){ urgency=2; label='BUGÜN'; cls='color:#f87171'; }
+        else { 
+          const gun=Math.round((new Date(occ._occ+'T12:00:00')-new Date())/(1000*60*60*24));
+          urgency=1; label=`${gun} gün`; cls='color:var(--amber)'; 
+        }
+        const t=(typeof ODEME_TIPLER!=='undefined'&&ODEME_TIPLER[occ.tip])||{icon:'📋',color:'#a1a1aa'};
+        items.push({urgency, icon:t.icon, title:occ.ad, meta:`${label} · ${occ._occ}`, amount:occ.tutar, style:cls, date:occ._occ});
+      }
+    });
+  });
+
+  // 2) Düşük stok uyarısı — stokta çok uzun kalan telefonlar (60+ gün)
+  const bugun=new Date();
+  S.telStok.filter(r=>r.durum==='stokta').forEach(r=>{
+    const giris=new Date(r.tarih+'T12:00:00');
+    const gun=Math.round((bugun-giris)/(1000*60*60*24));
+    if(gun>=60){
+      items.push({urgency:0, icon:'📱', title:`${r.model} — ${gun} gün stokta`, meta:'Yaşlandırma uyarısı', amount:r.alis, style:'color:var(--amber)', date:r.tarih});
+    }
+  });
+  S.ikiEl.filter(r=>r.durum==='stokta').forEach(r=>{
+    const giris=new Date(r.tarih+'T12:00:00');
+    const gun=Math.round((bugun-giris)/(1000*60*60*24));
+    if(gun>=60){
+      items.push({urgency:0, icon:'♻️', title:`2.El ${r.model} — ${gun} gün stokta`, meta:'Satış gecikmesi', amount:r.alis, style:'color:var(--purple)', date:r.tarih});
+    }
+  });
+
+  // Sırala: urgency yüksek önce
+  items.sort((a,b)=>b.urgency-a.urgency || a.date.localeCompare(b.date));
+
+  // Sayıyı güncelle
+  const urgentCount=items.filter(i=>i.urgency>=2).length;
+  if(countEl){
+    countEl.textContent=urgentCount;
+    countEl.style.display=urgentCount>0?'flex':'none';
+  }
+
+  if(!items.length){
+    listEl.innerHTML='<div class="notif-empty">Bekleyen bildirim yok</div>';
+    return;
+  }
+
+  listEl.innerHTML=items.slice(0,15).map(it=>`
+    <div class="notif-item" onclick="nav('takvim',document.querySelector('.nav-btn[onclick*=takvim]'));toggleNotifDropdown(event)">
+      <div class="notif-item-icon" style="background:var(--s2)">${it.icon}</div>
+      <div class="notif-item-body">
+        <div class="notif-item-title">${it.title}</div>
+        <div class="notif-item-meta" style="${it.style}">${it.meta}</div>
+      </div>
+      <div class="notif-item-amount" style="${it.style}">${fmt(it.amount)}</div>
+    </div>`).join('') + (items.length>15?`<div style="padding:10px 16px;font-size:11px;color:var(--t3);text-align:center">+${items.length-15} bildirim daha</div>`:'');
+}
+
+function updateNotifCount(){
+  const countEl=document.getElementById('notif-count');
+  if(!countEl) return;
+  const todayStr=new Date().toISOString().split('T')[0];
+  let cnt=0;
+  S.odemeler.forEach(o=>{
+    const past7=new Date(); past7.setDate(past7.getDate()-7);
+    const occs=getOdemeOccurrences(o, past7.toISOString().split('T')[0], todayStr);
+    occs.forEach(occ=>{
+      const pk=`${occ._origId}_${occ._occ}`;
+      if(!isPaid(pk)&&occ._occ<=todayStr) cnt++;
+    });
+  });
+  countEl.textContent=cnt;
+  countEl.style.display=cnt>0?'flex':'none';
+}
+
+// ════ HIZLI İŞLEM ════
+function openQuickActions(){ document.getElementById('qa-overlay').classList.add('open'); }
+function closeQuickActions(){ document.getElementById('qa-overlay').classList.remove('open'); }
+function qaGo(page){
+  closeQuickActions();
+  const btn=document.querySelector(`.nav-btn[onclick*="${page}"]`);
+  nav(page, btn);
+  // Sayfaya özel açılış aksiyonları
+  if(page==='takvim') setTimeout(()=>openOdemeForm(), 200);
+  if(page==='anakasa') setTimeout(()=>openKasaHareketModal(), 200);
+}
+// Klavye kısayolu: Ctrl+K veya Cmd+K
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+    e.preventDefault();
+    const ov=document.getElementById('qa-overlay');
+    if(ov.classList.contains('open')) closeQuickActions();
+    else openQuickActions();
+  }
+  // Escape ile kapat
+  if(e.key==='Escape'){
+    closeQuickActions();
+    const dd=document.getElementById('notif-dropdown');
+    if(dd) dd.classList.remove('open');
+  }
+});
+
+// ════ SPARKLINE ════
+function sparklineSVG(data, color, w, h){
+  if(!data||data.length<2) return '';
+  const min=Math.min(...data), max=Math.max(...data);
+  const range=max-min||1;
+  const points=data.map((v,i)=>{
+    const x=(i/(data.length-1))*w;
+    const y=h-((v-min)/range)*(h-4)-2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  // Trend yönü
+  const trend=data[data.length-1]-data[0];
+  const lineColor=trend>=0?(color||'var(--green)'):'var(--red)';
+  return `<span class="sparkline-wrap"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${points}" fill="none" stroke="${lineColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/></svg></span>`;
+}
+
+function getDailyDataForSparkline(days){
+  const result={ciro:[],kar:[],gider:[]};
+  const today=new Date();
+  for(let i=days-1;i>=0;i--){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const dayGiris=S.giris.filter(r=>r.tarih===ds);
+    const dayPazar=S.pazar.filter(r=>r.tarih===ds);
+    const dayGider=S.gider.filter(r=>r.tarih===ds);
+    const ciro=dayGiris.reduce((s,r)=>s+r.fiyat*r.adet,0)+dayPazar.reduce((s,r)=>s+r.tutar,0);
+    const kar=dayGiris.reduce((s,r)=>s+gKar(r),0)+dayPazar.reduce((s,r)=>s+pKar(r),0);
+    const gider=dayGider.reduce((s,r)=>s+r.tutar,0);
+    result.ciro.push(ciro);
+    result.kar.push(kar);
+    result.gider.push(gider);
+  }
+  return result;
+}
+
+// ════ NAKİT AKIŞ TAHMİNİ ════
+let _forecastDays=30;
+function setForecastDays(n, btn){
+  _forecastDays=n;
+  // Buton stillerini güncelle
+  ['fcst-15','fcst-30','fcst-60'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){b.style.borderColor='var(--b1)';b.style.color='var(--t2)';b.style.background='';}
+  });
+  if(btn){btn.style.borderColor='var(--cyan)';btn.style.color='var(--cyan)';}
+  renderForecast();
+}
+
+function renderForecast(){
+  const el=document.getElementById('dash-forecast');
+  if(!el) return;
+
+  const today=new Date();
+  const todayStr=today.toISOString().split('T')[0];
+  let bakiye=kasaBakiyeHesapla(todayStr);
+
+  // ── Dini bayram tarihleri (Ramazan & Kurban Bayramı 1. ve 2. günleri) ──
+  // 2025-2030 arası Diyanet takvimine göre
+  const diniBayramlar=[
+    // 2025
+    '2025-03-30','2025-03-31', // Ramazan Bayramı
+    '2025-06-06','2025-06-07', // Kurban Bayramı
+    // 2026
+    '2026-03-20','2026-03-21', // Ramazan Bayramı
+    '2026-05-26','2026-05-27', // Kurban Bayramı
+    // 2027
+    '2027-03-09','2027-03-10', // Ramazan Bayramı
+    '2027-05-16','2027-05-17', // Kurban Bayramı
+    // 2028
+    '2028-02-27','2028-02-28', // Ramazan Bayramı
+    '2028-05-04','2028-05-05', // Kurban Bayramı
+    // 2029
+    '2029-02-14','2029-02-15', // Ramazan Bayramı
+    '2029-04-23','2029-04-24', // Kurban Bayramı
+    // 2030
+    '2030-02-04','2030-02-05', // Ramazan Bayramı
+    '2030-04-13','2030-04-14', // Kurban Bayramı
+  ];
+
+  // ── Hafta günü bazlı gelir katsayıları ──
+  // Son 60 günün verilerinden hafta günlerine göre ortalama ciro hesapla
+  const gunKatsayi=[0.60, 1.0, 1.0, 1.0, 1.0, 1.0, 1.1]; // Paz,Pzt,Sal,Çar,Per,Cum,Cmt
+  // Gerçek verilerden hafta günü bazlı hesap
+  const gun60Data={};
+  for(let i=0;i<7;i++) gun60Data[i]={toplam:0, gun:0};
+  for(let i=0;i<60;i++){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const dow=d.getDay();
+    const dayGiris=S.giris.filter(r=>r.tarih===ds);
+    const dayPazar=S.pazar.filter(r=>r.tarih===ds);
+    const ciro=dayGiris.reduce((s,r)=>s+r.fiyat*r.adet,0)+dayPazar.reduce((s,r)=>s+r.tutar,0);
+    if(ciro>0){ gun60Data[dow].toplam+=ciro; gun60Data[dow].gun++; }
+  }
+  // Hafta günü bazlı ortalama ciro
+  const gunlukOrt={};
+  const genelOrt=Object.values(gun60Data).reduce((s,v)=>s+v.toplam,0) / Math.max(Object.values(gun60Data).reduce((s,v)=>s+v.gun,0),1);
+  for(let i=0;i<7;i++){
+    gunlukOrt[i] = gun60Data[i].gun>=3 ? (gun60Data[i].toplam/gun60Data[i].gun) : genelOrt*gunKatsayi[i];
+  }
+
+  // Nakit oranı hesapla
+  const allGiris60=S.giris.filter(r=>{
+    const d=new Date(r.tarih+'T12:00:00');
+    return (today-d)/(1000*60*60*24)<=60;
+  });
+  const toplamCiro60=allGiris60.reduce((s,r)=>s+r.fiyat*r.adet,0)||1;
+  const nakitCiro60=allGiris60.filter(r=>r.odeme==='Nakit').reduce((s,r)=>s+r.fiyat*r.adet,0);
+  const karmaNakit60=allGiris60.filter(r=>r.odeme==='Karma').reduce((s,r)=>s+(r.karmaNakit||0),0);
+  const nakitOran=(nakitCiro60+karmaNakit60)/toplamCiro60;
+
+  // Tekrarlayan gider tahmini (günlük ortalama nakit gider)
+  const gider60=S.gider.filter(r=>{
+    const d=new Date(r.tarih+'T12:00:00');
+    return (today-d)/(1000*60*60*24)<=60 && (r.odemeYontemi||'Nakit')==='Nakit';
+  });
+  const ortGunlukGider=gider60.reduce((s,r)=>s+r.tutar,0)/60;
+
+  // ── Tahmin verisi oluştur ──
+  const rows=[];
+  let minBakiye=bakiye, minGun='';
+  const MONTHS_SHORT=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const GUNLER=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+
+  for(let i=1;i<=_forecastDays;i++){
+    const d=new Date(today);
+    d.setDate(d.getDate()+i);
+    const ds=d.toISOString().split('T')[0];
+    const dow=d.getDay();
+    const gunAdi=GUNLER[dow];
+    const gunLabel=`${gunAdi} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+
+    // Bayram kontrolü
+    const isBayram=diniBayramlar.includes(ds);
+
+    // Planlanan ödemeler o gün — TÜM ödeme tipleri (bankadan veya nakitten, pratikte kasadan çıkıyor)
+    let planliCikis=0;
+    let planliOdemeler=[];
+    const occs=getOccurrencesForDate(ds);
+    occs.forEach(occ=>{
+      const pk=`${occ._origId}_${occ._occ}`;
+      if(!isPaid(pk)){
+        planliCikis+=occ.tutar;
+        planliOdemeler.push(occ.ad);
+      }
+    });
+
+    // Gelir tahmini
+    let gunGiris=0;
+    if(isBayram){
+      gunGiris=0; // Dini bayram 1-2. gün kapalı
+    } else {
+      gunGiris=gunlukOrt[dow]*nakitOran*0.85; // %85 güvenlik marjı
+    }
+
+    // Gider tahmini: planlı ödemeler + günlük ortalama küçük giderler
+    const gunCikis=planliCikis+ortGunlukGider;
+
+    bakiye+=gunGiris-gunCikis;
+    rows.push({
+      gun:gunLabel, giris:gunGiris, cikis:gunCikis, 
+      planliCikis, planliOdemeler, bakiye, 
+      isBayram, isPazar:dow===0, tarih:ds
+    });
+
+    if(bakiye<minBakiye){ minBakiye=bakiye; minGun=gunLabel; }
+  }
+
+  // ── Render ──
+  const maxBakiye=Math.max(...rows.map(r=>r.bakiye), 1);
+  const absMin=Math.min(0,...rows.map(r=>r.bakiye));
+  const range=maxBakiye-absMin||1;
+  const bugunBakiye=kasaBakiyeHesapla(todayStr);
+
+  let html='';
+
+  // Mini KPI'lar
+  const sonBakiye=rows[rows.length-1]?.bakiye||0;
+  const toplamPlanliCikis=rows.reduce((s,r)=>s+r.planliCikis,0);
+  const toplamTahminiGelir=rows.reduce((s,r)=>s+r.giris,0);
+  html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+    <div class="kasa-mini" style="border-color:var(--cyan)">
+      <div class="kasa-mini-label" style="color:var(--cyan)">Bugünkü Bakiye</div>
+      <div class="kasa-mini-val" style="color:${bugunBakiye>=0?'var(--green)':'var(--red)'}">${fmt(bugunBakiye)}</div>
+    </div>
+    <div class="kasa-mini">
+      <div class="kasa-mini-label">${_forecastDays} Gün Sonra (Tahmin)</div>
+      <div class="kasa-mini-val" style="color:${sonBakiye>=0?'var(--green)':'var(--red)'}">${fmt(sonBakiye)}</div>
+    </div>
+    <div class="kasa-mini">
+      <div class="kasa-mini-label">Planlı Ödemeler</div>
+      <div class="kasa-mini-val" style="color:var(--red)">−${fmt(toplamPlanliCikis)}</div>
+    </div>
+    <div class="kasa-mini">
+      <div class="kasa-mini-label">En Düşük Nokta</div>
+      <div class="kasa-mini-val" style="color:${minBakiye>=0?'var(--amber)':'var(--red)'}">${fmt(minBakiye)}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:2px">${minGun}</div>
+    </div>
+  </div>`;
+
+  // Bar chart
+  const step=_forecastDays>30?3:(_forecastDays>15?2:1);
+  html+='<div style="display:flex;flex-direction:column;gap:3px">';
+  rows.forEach((r,i)=>{
+    if(i%step!==0&&i!==rows.length-1&&!r.planliCikis&&!r.isBayram) return;
+    const pct=((r.bakiye-absMin)/range)*100;
+    const barColor=r.bakiye<0?'var(--red)':r.bakiye<bugunBakiye*0.3?'var(--amber)':'var(--cyan)';
+    const hasPayment=r.planliCikis>0;
+    const bayramTag=r.isBayram?'<span style="font-size:9px;background:var(--amber3);color:var(--amber);padding:1px 5px;border-radius:3px;margin-left:4px">BAYRAM</span>':'';
+    const odemeTag=hasPayment?`<span style="font-size:10px;color:var(--red)" title="${r.planliOdemeler.join(', ')}">−${fmt(r.planliCikis)} 📋</span>`:'';
+    html+=`<div class="forecast-bar" ${hasPayment?'style="font-weight:600"':''}>
+      <div class="forecast-day">${r.gun}${bayramTag}</div>
+      <div class="forecast-track"><div class="forecast-fill" style="width:${Math.max(pct,2)}%;background:${barColor}"></div></div>
+      <div class="forecast-amount" style="color:${r.bakiye>=0?barColor:'var(--red)'}">${fmt(r.bakiye)}</div>
+      ${odemeTag}
+    </div>`;
+  });
+  html+='</div>';
+
+  // Uyarılar
+  if(minBakiye<0){
+    html+=`<div class="forecast-warning" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red)">
+      ⚠️ <strong>${minGun}</strong> tarihinde kasanın negatife düşmesi bekleniyor! (${fmt(minBakiye)})
+    </div>`;
+  } else if(minBakiye<bugunBakiye*0.2){
+    html+=`<div class="forecast-warning" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)">
+      ⚡ Dikkat: ${minGun} tarihinde bakiye kritik seviyeye inebilir (${fmt(minBakiye)})
+    </div>`;
+  }
+
+  // Bayram uyarısı
+  const bayramGunler=rows.filter(r=>r.isBayram);
+  if(bayramGunler.length){
+    html+=`<div class="forecast-warning" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:var(--amber)">
+      🕌 ${bayramGunler.length} bayram günü var — dükkan kapalı olacak, gelir hesaplanmadı
+    </div>`;
+  }
+
+  html+=`<div style="font-size:10px;color:var(--t3);margin-top:8px;padding-top:6px;border-top:1px solid var(--b1)">
+    📊 <strong>Tahmin yöntemi:</strong> Son 60 günün hafta günü bazlı satış ortalaması × nakit oranı (%${(nakitOran*100).toFixed(0)}) × %85 güvenlik marjı.
+    Pazar günleri %60 gelir. Dini bayram 1-2. günleri gelir sıfır. Tüm takvim ödemeleri nakit çıkış olarak hesaplanır.
+  </div>`;
+
+  el.innerHTML=html;
 }
 
 // ════ MOBİL SİDEBAR ════
