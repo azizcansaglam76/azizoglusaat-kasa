@@ -6296,14 +6296,28 @@ function bankaBakiyeHesapla(bankaAd){
     if(hesap===bankaAd){
       const paidTarih = typeof paidData==='object' ? paidData.tarih : '';
       if(paidTarih>=acilisTarih){
-        // Önce kaydedilmiş gerçek tutarı kullan, yoksa ödeme tanımındaki tutarı kullan
-        let tutar = (typeof paidData==='object' && paidData.tutar) ? paidData.tutar : 0;
-        if(!tutar){
-          const oid = +pk.split('_')[0];
+        // 1) Kaydedilmiş gerçek tutarı kullan (yeni format)
+        if(typeof paidData==='object' && paidData.tutar){
+          bakiye -= paidData.tutar;
+        } else {
+          // 2) Eski format — occurrence tutarını yeniden hesapla
+          const parts = pk.split('_');
+          const oid = +parts[0];
           const od = S.odemeler.find(o=>o.id===oid);
-          if(od) tutar = od.tutar;
+          if(od){
+            let tutar = od.tutar;
+            // KK ödemelerinde ayKey ile aylık ekstre tutarını kontrol et
+            if(od.tip==='kk'){
+              const ayKey = pk; // paidKey zaten "{id}_{YYYY-MM}" formatında
+              const aylikTutar = (S.kkAylikTutar||{})[ayKey];
+              if(aylikTutar!=null) tutar = aylikTutar;
+              // kkManuelTutar da kontrol et
+              const manuelTutar = (S.kkManuelTutar||{})[ayKey];
+              if(manuelTutar!=null) tutar = manuelTutar;
+            }
+            bakiye -= tutar;
+          }
         }
-        bakiye -= tutar;
       }
     }
   });
@@ -6369,9 +6383,17 @@ function bankaHareketlerGetir(bankaAd){
       const paidTarih = typeof paidData==='object' ? paidData.tarih : '';
       const oid = +pk.split('_')[0];
       const od = S.odemeler.find(o=>o.id===oid);
-      // Önce kaydedilmiş gerçek tutarı kullan, yoksa ödeme tanımındaki tutarı kullan
+      // Tutarı belirle: 1) kaydedilmiş, 2) KK aylik tutar, 3) base tutar
       let tutar = (typeof paidData==='object' && paidData.tutar) ? paidData.tutar : 0;
-      if(!tutar && od) tutar = od.tutar;
+      if(!tutar && od){
+        tutar = od.tutar;
+        if(od.tip==='kk'){
+          const aylikTutar = (S.kkAylikTutar||{})[pk];
+          if(aylikTutar!=null) tutar = aylikTutar;
+          const manuelTutar = (S.kkManuelTutar||{})[pk];
+          if(manuelTutar!=null) tutar = manuelTutar;
+        }
+      }
       if(od && paidTarih>=acilisTarih) hareketler.push({id:`od_${pk}`,bankaAd,tip:'otomatik',yon:-1,tutar:tutar,tarih:paidTarih,aciklama:`Ödeme: ${od.ad}`,icon:'📅',renk:'var(--amber)',label:'Takvim Ödemesi',kaynak:'otomatik'});
     }
   });
