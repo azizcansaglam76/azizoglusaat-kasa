@@ -2082,23 +2082,29 @@ async function supaFetch(method, body=null){
 
 // ── Çevrimdışı Kuyruk ──
 let _saveTimer = null;
-let _pendingSync = false;   // bekleyen kayıt var mı
+let _pendingSync = false;
 let _isOnline = navigator.onLine;
-let _lastSyncedAt = null;   // son başarılı sync zamanı
+let _lastSyncedAt = null;
+let _lastRemoteUpdatedAt = null; // Supabase'deki son updated_at değeri
+let _isSyncing = false; // Eşzamanlı sync engelleme
 
 function setSyncIndicator(text, color){
   const ind = document.getElementById('sync-indicator');
   if(ind){ ind.textContent=text; ind.style.color=color; }
 }
 
+function _buildSavePayload(){
+  return {...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler};
+}
+
 function save(){
-    const saveData = {...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler, _savedAt: new Date().toISOString()};
-    try{ localStorage.setItem('kasapro_v1', JSON.stringify(saveData)); }catch(e){}
-    _pendingSync = true;
+  const saveData = {..._buildSavePayload(), _savedAt: new Date().toISOString()};
+  try{ localStorage.setItem('kasapro_v1', JSON.stringify(saveData)); }catch(e){}
+  _pendingSync = true;
   try{ localStorage.setItem('kasapro_pending','1'); }catch(e){}
 
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(()=> syncToSupabase(), 600);
+  _saveTimer = setTimeout(()=> syncToSupabase(), 800);
 }
 
 async function syncToSupabase(){
@@ -2106,19 +2112,117 @@ async function syncToSupabase(){
     setSyncIndicator('📵 Çevrimdışı — bekliyor', 'var(--amber)');
     return;
   }
+  if(_isSyncing) return; // Zaten sync yapılıyorsa bekle
+  _isSyncing = true;
+
   try{
+    // ── ADIM 1: Önce uzak veriyi kontrol et ──
+    const rows = await supaFetch('GET');
+    const remoteData = (rows && rows.length > 0) ? rows[0] : null;
+    const remoteTime = remoteData?.updated_at ? new Date(remoteData.updated_at).getTime() : 0;
+    const lastKnown = _lastRemoteUpdatedAt ? new Date(_lastRemoteUpdatedAt).getTime() : 0;
+
+    // Eğer başka cihaz bizden sonra yazdıysa, önce onun verisini al ve birleştir
+    if(remoteData?.data && remoteTime > lastKnown + 1000){
+      // Başka cihazdan yeni veri var — akıllı birleştirme yap
+      _smartMerge(remoteData.data);
+    }
+
+    // ── ADIM 2: Birleştirilmiş veriyi Supabase'e yaz ──
     const now = new Date().toISOString();
-    await supaFetch('POST', {id:'main', data: {...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler}, updated_at: now});
+    await supaFetch('POST', {id:'main', data: _buildSavePayload(), updated_at: now});
     _pendingSync = false;
     _lastSyncedAt = now;
+    _lastRemoteUpdatedAt = now;
     try{ localStorage.removeItem('kasapro_pending'); }catch(e){}
+
+    // localStorage'ı da güncelle
+    const freshSave = {..._buildSavePayload(), _savedAt: now};
+    try{ localStorage.setItem('kasapro_v1', JSON.stringify(freshSave)); }catch(e){}
+
     setSyncIndicator('☁ Kaydedildi', 'var(--green)');
     setTimeout(()=> setSyncIndicator('☁ Senkron', 'var(--t3)'), 2000);
   }catch(e){
-    setSyncIndicator('⏳ Limit doldu — veriler lokalda güvende', 'var(--amber)');
-    // Veriler localStorage'da — internet açık olduğunda tekrar dene
-    try{ localStorage.setItem('kasapro_pending','1'); }catch(e){}
+    if(e.message==='RATE_LIMIT'){
+      setSyncIndicator('⏳ Limit doldu — veriler lokalda güvende', 'var(--amber)');
+    } else {
+      setSyncIndicator('⚠ Yazma hatası — tekrar denenecek', 'var(--amber)');
+    }
+    try{ localStorage.setItem('kasapro_pending','1'); }catch(e2){}
     _pendingSync = true;
+  } finally {
+    _isSyncing = false;
+  }
+}
+
+// ── Akıllı birleştirme: İki veri setindeki kayıtları ID bazlı birleştir ──
+function _smartMerge(remotePayload){
+  if(!remotePayload) return;
+  const arrays = ['giris','pazar','gider','telStok','ikiEl','odemeler','kkHarcamalar'];
+  const remBanka = remotePayload.bankaHareketler || [];
+  const remKasa = remotePayload.kasaHareketler || [];
+
+  arrays.forEach(key=>{
+    const local = S[key] || [];
+    const remote = remotePayload[key] || [];
+    if(!remote.length) return;
+
+    // ID bazlı birleştir — her iki taraftaki kayıtları tut
+    const localIds = new Set(local.map(r=>String(r.id)));
+    const remoteIds = new Set(remote.map(r=>String(r.id)));
+
+    // Uzakta olup yerelde olmayan kayıtları ekle
+    remote.forEach(r=>{
+      if(!localIds.has(String(r.id))){
+        local.push(r);
+      }
+    });
+
+    S[key] = local;
+  });
+
+  // Banka hareketleri birleştir
+  const localBankaIds = new Set(S_bankaHareketler.map(r=>String(r.id)));
+  remBanka.forEach(r=>{
+    if(!localBankaIds.has(String(r.id))) S_bankaHareketler.push(r);
+  });
+
+  // Kasa hareketleri birleştir
+  const localKasaIds = new Set(S_kasaHareketler.map(r=>String(r.id)));
+  remKasa.forEach(r=>{
+    if(!localKasaIds.has(String(r.id))) S_kasaHareketler.push(r);
+  });
+
+  // Obje bazlı veriler — uzaktaki yenileri ekle (üzerine yazma)
+  ['odemePaid','kkAylikTutar','kkManuelTutar','gunlukNotlar'].forEach(key=>{
+    const local = S[key] || {};
+    const remote = remotePayload[key] || {};
+    // Yerelde olmayan anahtarları ekle
+    Object.keys(remote).forEach(k=>{
+      if(!(k in local)) local[k] = remote[k];
+    });
+    S[key] = local;
+  });
+
+  // Settings — uzaktan gelen banka hesaplarını birleştir
+  if(remotePayload.settings){
+    const remBankalar = remotePayload.settings.bankaHesaplari || [];
+    const localBankalar = S.settings.bankaHesaplari || [];
+    const localBankaAdlar = new Set(localBankalar.map(b=>b.ad));
+    remBankalar.forEach(b=>{
+      if(!localBankaAdlar.has(b.ad)) localBankalar.push(b);
+    });
+    // Banka açılış, komisyon gibi ayarları da birleştir
+    if(remotePayload.settings.bankaAcilis){
+      S.settings.bankaAcilis = {...(remotePayload.settings.bankaAcilis||{}), ...(S.settings.bankaAcilis||{})};
+    }
+  }
+
+  // uid güncelle
+  const all=[...S.giris,...S.pazar,...S.gider,...S.telStok,...S.ikiEl,...S.odemeler,...S.kkHarcamalar,...S_bankaHareketler,...S_kasaHareketler];
+  if(all.length){
+    const maxId = all.reduce((m,r)=>{ const n=+r.id||0; return n>m?n:m; }, uid);
+    uid = maxId + 1;
   }
 }
 
@@ -2128,8 +2232,8 @@ window.addEventListener('online', async ()=>{
   setSyncIndicator('🔄 Bağlandı, senkronize ediliyor...', 'var(--amber)');
   if(_pendingSync || localStorage.getItem('kasapro_pending')){
     await syncToSupabase();
+    renderAll();
   } else {
-    // Başka cihazdan değişiklik var mı kontrol et
     await checkRemoteChanges();
   }
 });
@@ -2141,47 +2245,60 @@ window.addEventListener('offline', ()=>{
 
 // Uzak değişiklik kontrolü — başka cihazdan yeni veri geldi mi?
 async function checkRemoteChanges(){
+  if(_isSyncing) return;
   try{
     const rows = await supaFetch('GET');
     if(rows && rows.length > 0 && rows[0].updated_at){
       const remoteTime = new Date(rows[0].updated_at).getTime();
-      const localTime  = _lastSyncedAt ? new Date(_lastSyncedAt).getTime() : 0;
-      if(remoteTime > localTime + 2000){ // 2sn tolerans
-        // Uzakta daha yeni veri var
-        const ok = confirm('📡 Başka bir cihazdan yeni veri algılandı! Güncel veriyi yüklemek ister misin?\n\n(Hayır dersen mevcut verilerin korunur)');
-        if(ok){
-          _mergeState(rows[0].data);
-          localStorage.setItem('kasapro_v1', JSON.stringify(S));
-          _lastSyncedAt = rows[0].updated_at;
-          renderAll();
-          setSyncIndicator('☁ Senkron', 'var(--t3)');
-        }
+      const lastKnown = _lastRemoteUpdatedAt ? new Date(_lastRemoteUpdatedAt).getTime() : 0;
+      if(remoteTime > lastKnown + 2000){
+        // Uzakta daha yeni veri var — sessizce birleştir
+        _smartMerge(rows[0].data);
+        _lastRemoteUpdatedAt = rows[0].updated_at;
+        _lastSyncedAt = rows[0].updated_at;
+        // localStorage güncelle
+        const freshSave = {..._buildSavePayload(), _savedAt: rows[0].updated_at};
+        try{ localStorage.setItem('kasapro_v1', JSON.stringify(freshSave)); }catch(e){}
+        renderAll();
+        setSyncIndicator('☁ Güncellendi', 'var(--green)');
+        setTimeout(()=> setSyncIndicator('☁ Senkron', 'var(--t3)'), 2000);
       } else {
         setSyncIndicator('☁ Senkron', 'var(--t3)');
       }
     }
   }catch(e){
-    setSyncIndicator('⚠ Çevrimdışı', 'var(--amber)');
+    setSyncIndicator('⚠ Bağlantı hatası', 'var(--amber)');
   }
 }
 
-// Periyodik sync kontrolü — her 60 saniyede bir uzak değişiklik kontrol et
+// Periyodik sync kontrolü — her 30 saniyede bir (eskisi 60'tı)
 setInterval(async ()=>{
-  if(navigator.onLine && !_pendingSync){
+  if(navigator.onLine && !_pendingSync && !_isSyncing){
     await checkRemoteChanges();
   }
-}, 60000);
+}, 30000);
+
+// Sayfa kapanırken bekleyen veriyi kaydet
+window.addEventListener('beforeunload', ()=>{
+  if(_pendingSync){
+    const saveData = {..._buildSavePayload(), _savedAt: new Date().toISOString()};
+    try{ localStorage.setItem('kasapro_v1', JSON.stringify(saveData)); }catch(e){}
+    try{ localStorage.setItem('kasapro_pending','1'); }catch(e){}
+    // Son bir sync denemesi (sendBeacon ile)
+    try{
+      const payload = JSON.stringify({id:'main', data: _buildSavePayload(), updated_at: new Date().toISOString()});
+      navigator.sendBeacon(`${SUPA_URL}/rest/v1/kasa_data?on_conflict=id`, new Blob([payload],{type:'application/json'}));
+    }catch(e){}
+  }
+});
 
 async function load(){
   // Önce localStorage'dan yükle (hızlı başlangıç)
   let localData = null;
-  let localTime = 0;
   try{
     const d = localStorage.getItem('kasapro_v1');
     if(d){
       localData = JSON.parse(d);
-      // Yerel verinin zaman damgasını al
-      localTime = localData._savedAt ? new Date(localData._savedAt).getTime() : 0;
       _mergeState(localData);
     }
   }catch(e){}
@@ -2193,19 +2310,19 @@ async function load(){
     const rows = await supaFetch('GET');
 
     if(rows && rows.length > 0 && rows[0].data && Object.keys(rows[0].data).length > 0){
-      const remoteTime = rows[0].updated_at ? new Date(rows[0].updated_at).getTime() : 0;
+      _lastRemoteUpdatedAt = rows[0].updated_at;
 
-      if(hasPending || localTime > remoteTime){
-        // Yerel veri daha yeni veya bekleyen değişiklik var → Supabase'e gönder
+      if(hasPending){
+        // Bekleyen yerel değişiklikler var → akıllı birleştir + yaz
+        _smartMerge(rows[0].data);
         setSyncIndicator('🔄 Yerel değişiklikler senkronize ediliyor...', 'var(--amber)');
         await syncToSupabase();
-      } else if(remoteTime > localTime){
-        // Supabase daha yeni → çek
-        _mergeState(rows[0].data);
-        localStorage.setItem('kasapro_v1', JSON.stringify({...S, bankaHareketler: S_bankaHareketler, kasaHareketler: S_kasaHareketler}));
-        _lastSyncedAt = rows[0].updated_at;
-        setSyncIndicator('☁ Senkron', 'var(--t3)');
       } else {
+        // Bekleyen yok → uzak veriyi al
+        _smartMerge(rows[0].data);
+        _lastSyncedAt = rows[0].updated_at;
+        const freshSave = {..._buildSavePayload(), _savedAt: rows[0].updated_at};
+        try{ localStorage.setItem('kasapro_v1', JSON.stringify(freshSave)); }catch(e){}
         setSyncIndicator('☁ Senkron', 'var(--t3)');
       }
     } else {
