@@ -4210,8 +4210,11 @@ function getUpcomingOdemeler(days=30){
   S.odemeler.forEach(o=>{
     const occs=getOdemeOccurrences(o,today.toISOString().split('T')[0],to.toISOString().split('T')[0]);
     occs.forEach(occ=>{
-      const paidKey=`${occ._origId}_${occ._occ}`;
-      all.push({...occ,paid:isPaid(paidKey),paidKey});
+      const displayDate = occ._occDisplay || occ._occ;
+      const paidKeyNew = `${occ._origId}_${displayDate}`;
+      const paidKeyOld = `${occ._origId}_${occ._occ}`;
+      const paidKey = isPaid(paidKeyNew) ? paidKeyNew : (isPaid(paidKeyOld) ? paidKeyOld : paidKeyNew);
+      all.push({...occ, _occ:displayDate, paid:isPaid(paidKey)||isPaid(paidKeyOld), paidKey});
     });
   });
   return all.sort((a,b)=>a._occ.localeCompare(b._occ));
@@ -4469,8 +4472,11 @@ function renderTakvim(){
     const from=new Date(); from.setDate(from.getDate()-30);
     const occs=getOdemeOccurrences(o,from.toISOString().split('T')[0],todayStr);
     occs.forEach(occ=>{
-      const pk=`${occ._origId}_${occ._occ}`;
-      if(!isPaid(pk)&&occ._occ<todayStr) past30.push({...occ,paidKey:pk});
+      const displayDate = occ._occDisplay || occ._occ;
+      const paidKeyNew = `${occ._origId}_${displayDate}`;
+      const paidKeyOld = `${occ._origId}_${occ._occ}`;
+      const pk = isPaid(paidKeyNew) ? paidKeyNew : (isPaid(paidKeyOld) ? paidKeyOld : paidKeyNew);
+      if(!isPaid(pk) && displayDate<todayStr) past30.push({...occ, _occ:displayDate, paidKey:pk});
     });
   });
   const totalBudget=getUpcomingOdemeler(30).reduce((s,o)=>s+o.tutar,0);
@@ -6032,8 +6038,12 @@ function renderDashOdemeBildirim(){
       future7.toISOString().split('T')[0]
     );
     occs.forEach(occ=>{
-      const pk=`${occ._origId}_${occ._occ}`;
-      if(!isPaid(pk)) all.push({...occ, paidKey:pk});
+      // KK ödemelerinde _occ ayKey formatında (id_YYYY-MM), tarih _occDisplay'da
+      const displayDate = occ._occDisplay || occ._occ;
+      const paidKeyNew = `${occ._origId}_${displayDate}`;
+      const paidKeyOld = `${occ._origId}_${occ._occ}`;
+      const paidKey = isPaid(paidKeyNew) ? paidKeyNew : (isPaid(paidKeyOld) ? paidKeyOld : paidKeyNew);
+      if(!isPaid(paidKey)) all.push({...occ, _occ: displayDate, paidKey});
     });
   });
 
@@ -7173,17 +7183,21 @@ function renderNotifications(){
   S.odemeler.forEach(o=>{
     const occs=getOdemeOccurrences(o, past30.toISOString().split('T')[0], future14.toISOString().split('T')[0]);
     occs.forEach(occ=>{
-      const pk=`${occ._origId}_${occ._occ}`;
+      // KK ödemelerinde _occ ayKey formatında, tarih _occDisplay'da
+      const displayDate = occ._occDisplay || occ._occ;
+      const paidKeyNew = `${occ._origId}_${displayDate}`;
+      const paidKeyOld = `${occ._origId}_${occ._occ}`;
+      const pk = isPaid(paidKeyNew) ? paidKeyNew : (isPaid(paidKeyOld) ? paidKeyOld : paidKeyNew);
       if(!isPaid(pk)){
         let urgency=0, label='', cls='';
-        if(occ._occ<todayStr){ urgency=3; label='GECİKMİŞ'; cls='color:#f87171'; }
-        else if(occ._occ===todayStr){ urgency=2; label='BUGÜN'; cls='color:#f87171'; }
+        if(displayDate<todayStr){ urgency=3; label='GECİKMİŞ'; cls='color:#f87171'; }
+        else if(displayDate===todayStr){ urgency=2; label='BUGÜN'; cls='color:#f87171'; }
         else { 
-          const gun=Math.round((new Date(occ._occ+'T12:00:00')-new Date())/(1000*60*60*24));
+          const gun=Math.round((new Date(displayDate+'T12:00:00')-new Date())/(1000*60*60*24));
           urgency=1; label=`${gun} gün`; cls='color:var(--amber)'; 
         }
         const t=(typeof ODEME_TIPLER!=='undefined'&&ODEME_TIPLER[occ.tip])||{icon:'📋',color:'#a1a1aa'};
-        items.push({urgency, icon:t.icon, title:occ.ad, meta:`${label} · ${occ._occ}`, amount:occ.tutar, style:cls, date:occ._occ});
+        items.push({urgency, icon:t.icon, title:occ.ad, meta:`${label} · ${displayDate}`, amount:occ.tutar, style:cls, date:displayDate});
       }
     });
   });
@@ -7240,8 +7254,11 @@ function updateNotifCount(){
     const past7=new Date(); past7.setDate(past7.getDate()-7);
     const occs=getOdemeOccurrences(o, past7.toISOString().split('T')[0], todayStr);
     occs.forEach(occ=>{
-      const pk=`${occ._origId}_${occ._occ}`;
-      if(!isPaid(pk)&&occ._occ<=todayStr) cnt++;
+      const displayDate = occ._occDisplay || occ._occ;
+      const paidKeyNew = `${occ._origId}_${displayDate}`;
+      const paidKeyOld = `${occ._origId}_${occ._occ}`;
+      const pk = isPaid(paidKeyNew) ? paidKeyNew : (isPaid(paidKeyOld) ? paidKeyOld : paidKeyNew);
+      if(!isPaid(pk) && displayDate<=todayStr) cnt++;
     });
   });
   countEl.textContent=cnt;
@@ -7415,8 +7432,7 @@ function renderForecast(){
     let planliOdemeler=[];
     const occs=getOccurrencesForDate(ds);
     occs.forEach(occ=>{
-      const pk=`${occ._origId}_${occ._occ}`;
-      if(!isPaid(pk)){
+      if(!occ.paid && !isPaid(occ.paidKey)){
         planliCikis+=occ.tutar;
         planliOdemeler.push(occ.ad);
       }
